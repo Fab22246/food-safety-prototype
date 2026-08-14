@@ -1,0 +1,267 @@
+/* GovTechBB Design Tokens for Tailwind CSS 4 */
+
+/* CSS Custom Properties - Always output */
+:root {
+  /* Brand Colours - Yellow */
+  --color-yellow-00: #e8a833;
+  --color-yellow-100: #ffc726;
+  --color-yellow-40: #ffe9a8;
+  --color-yellow-10: #fff9e9;
+
+  /* Brand Colours - Blue */
+  --color-blue-00: #00164a;
+  --color-blue-100: #00267f;
+  --color-blue-40: #99a8cc;
+  --color-blue-10: #e5e9f2;
+
+  /* Brand Colours - Neutral */
+  --color-black-00: #000000;
+  --color-mid-grey-00: #595959;
+  --color-grey-00: #e0e4e9;
+  --color-white-00: #ffffff;
+
+  /* Brand Colours - Green */
+  --color-green-00: #00654a;
+  --color-green-100: #1fbf84;
+  --color-green-40: #a5e5ce;
+  --color-green-10: #e9f9f3;
+
+  /* Brand Colours - Red */
+  --color-red-00: #a42c2c;
+  --color-red-100: #ff6b6b;
+  --color-red-40: #ffc4c4;
+  --color-red-10: #fff0f0;
+
+  /* Brand Colours - Purple */
+  --color-purple-00: #4a235a;
+  --color-purple-100: #a962c7;
+  --color-purple-40: #ddc0e9;
+  --color-purple-10: #f6eff9;
+
+  /* Brand Colours - Pink */
+  --color-pink-00: #ad1157;
+  --color-pink-100: #ff94d9;
+  --color-pink-40: #ffd4f0;
+  --color-pink-10: #fff4fb;
+
+  /* Brand Colours - Teal */
+  --color-teal-00: #0e5f64;
+  --color-teal-100: #30c0c8;
+  --color-teal-40: #ace6e9;
+  --color-teal-10: #eaf9f9;
+
+  /* Focus ring color */
+  --color-focus-visible: #ace6e9;
+
+  /* Typography - Font Sizes */
+  --font-size-display: 5rem; /* 80px */
+  --font-size-h1: 3.5rem; /* 56px */
+  --font-size-h2: 2.5rem; /* 40px */
+  --font-size-h3: 1.5rem; /* 24px */
+  --font-size-h4: 1.25rem; /* 20px */
+  --font-size-body-lg: 2rem; /* 32px */
+  --font-size-body: 1.25rem; /* 20px */
+  --font-size-caption: 1rem; /* 16px */
+  --font-size-caption-sm: 0.75rem; /* 12px */
+
+  /* Typography - Line Heights */
+  --line-height-display: 1;
+  --line-height-h1: 1.15;
+  --line-height-h2: 1.25;
+  --line-height-h3: 1.25;
+  --line-height-h4: 1.5;
+  --line-height-body-lg: 1.5;
+  --line-height-body: 1.5;
+  --line-height-caption: 1.5;
+  --line-height-caption-sm: 1.5;
+
+  /* Typography - Font Weights */
+  --font-weight-bold: 700;
+  --font-weight-normal: 400;
+
+  /* Typography - Font Family */
+  --font-family-base: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* Shadows */
+  --shadow-form-hover: inset 4px 4px 0px 0px rgba(0, 0, 0, 0.1);
+
+  /* Disabled State */
+  --opacity-disabled: 0.4;
+
+  /* Spacing Scale */
+  --spacing-xxs: 0.25rem; /* 4px */
+  --spacing-xs: 0.5rem; /* 8px */
+  --spacing-s: 1rem; /* 16px */
+  --spacing-xm: 1.5rem; /* 24px */
+  --spacing-m: 2rem; /* 32px */
+  --spacing-l: 4rem; /* 64px */
+  --spacing-xl: 8rem; /* 128px */
+}
+
+/* Tailwind Theme Configuration - For utility generation */
+@theme {
+  /* Brand Colours - Blue */
+  --color-blue-00: #00164a;
+  --color-blue-100: #00267f;
+  --color-blue-40: #99a8cc;
+  --color-blue-10: #e5e9f2;
+
+  /* Brand Colours - Yellow */
+  --color-yellow-00: #e8a833;
+  --color-yellow-100: #ffc726;
+  --color-yellow-40: #ffe9a8;
+  --color-yellow-10: #fff9e9;
+
+  /* Brand Colours - Neutral */
+  --color-black-00: #000000;
+  --color-mid-grey-00: #595959;
+  --color-grey-00: #e0e4e9;
+  --color-white-00: #ffffff;
+
+  /* Brand Colours - Green */
+  --color-green-00: #00654a;
+  --color-green-100: #1fbf84;
+  --color-green-40: #a5e5ce;
+  --color-green-10: #e9f9f3;
+
+  /* Brand Colours - Red */
+  --color-red-00: #a42c2c;
+  --color-red-100: #ff6b6b;
+  --color-red-40: #ffc4c4;
+  --color-red-10: #fff0f0;
+
+  /* Brand Colours - Purple */
+  --color-purple-00: #4a235a;
+  --color-purple-100: #a962c7;
+  --color-purple-40: #ddc0e9;
+  --color-purple-10: #f6eff9;
+
+  /* Brand Colours - Pink */
+  --color-pink-00: #ad1157;
+  --color-pink-100: #ff94d9;
+  --color-pink-40: #ffd4f0;
+  --color-pink-10: #fff4fb;
+
+  /* Brand Colours - Teal */
+  --color-teal-00: #0e5f64;
+  --color-teal-100: #30c0c8;
+  --color-teal-40: #ace6e9;
+  --color-teal-10: #eaf9f9;
+
+  /* Typography - Font Sizes */
+  --font-size-display: 5rem; /* 80px */
+  --font-size-h1: 3.5rem; /* 56px */
+  --font-size-h2: 2.5rem; /* 40px */
+  --font-size-h3: 1.5rem; /* 24px */
+  --font-size-h4: 1.25rem; /* 20px */
+  --font-size-body-lg: 2rem; /* 32px */
+  --font-size-body: 1.25rem; /* 20px */
+  --font-size-caption: 1rem; /* 16px */
+  --font-size-caption-sm: 0.75rem; /* 12px */
+
+  /* Typography - Line Heights */
+  --line-height-display: 1;
+  --line-height-h1: 1.15;
+  --line-height-h2: 1.25;
+  --line-height-h3: 1.25;
+  --line-height-h4: 1.5;
+  --line-height-body-lg: 1.5;
+  --line-height-body: 1.5;
+  --line-height-caption: 1.5;
+  --line-height-caption-sm: 1.5;
+
+  /* Typography - Font Weights */
+  --font-weight-bold: 700;
+  --font-weight-normal: 400;
+
+  /* Typography - Font Family */
+  --font-family-base: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* Shadows */
+  --shadow-form-hover: inset 4px 4px 0px 0px rgba(0, 0, 0, 0.1);
+
+  /* Disabled State */
+  /* TODO: Components dont have a disabled state on figma, need Jack to confirm what is needed. */
+  --opacity-disabled: 0.4;
+
+  /* Spacing Scale */
+  --spacing-xxs: 0.25rem; /* 4px */
+  --spacing-xs: 0.5rem; /* 8px */
+  --spacing-s: 1rem; /* 16px */
+  --spacing-xm: 1.5rem; /* 24px */
+  --spacing-m: 2rem; /* 32px */
+  --spacing-l: 4rem; /* 64px */
+  --spacing-xl: 8rem; /* 128px */
+}
+
+/* Disabled State Utility */
+/* TODO: Components dont have a disabled state on figma, need Jack to confirm what is needed. */
+@utility disabled-state {
+  &:disabled {
+    cursor: not-allowed;
+    opacity: var(--opacity-disabled);
+  }
+}
+
+/* Typography Utilities */
+@utility text-display {
+  font-size: var(--font-size-display);
+  line-height: var(--line-height-display);
+  font-weight: var(--font-weight-bold);
+}
+
+@utility text-h1 {
+  font-size: var(--font-size-h1);
+  line-height: var(--line-height-h1);
+  font-weight: var(--font-weight-bold);
+}
+
+@utility text-h2 {
+  font-size: var(--font-size-h2);
+  line-height: var(--line-height-h2);
+  font-weight: var(--font-weight-bold);
+}
+
+@utility text-h3 {
+  font-size: var(--font-size-h3);
+  line-height: var(--line-height-h3);
+  font-weight: var(--font-weight-bold);
+}
+
+@utility text-h4 {
+  font-size: var(--font-size-h4);
+  line-height: var(--line-height-h4);
+  font-weight: var(--font-weight-bold);
+}
+
+@utility text-body-lg {
+  font-size: var(--font-size-body-lg);
+  line-height: var(--line-height-body-lg);
+  font-weight: var(--font-weight-normal);
+}
+
+@utility text-body {
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+  font-weight: var(--font-weight-normal);
+}
+
+@utility text-caption {
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  font-weight: var(--font-weight-normal);
+}
+
+@utility text-caption-sm {
+  font-size: var(--font-size-caption-sm);
+  line-height: var(--line-height-caption-sm);
+  font-weight: var(--font-weight-normal);
+}
+
+body {
+  font-family: var(--font-family-base);
+}
+
+/* No page-width container here on purpose. The consuming app owns `.container`
+ * (gov-bb apps each define their own), so components compose with it rather than
+ * the design system imposing a width model. Storybook supplies a preview `.container`. */

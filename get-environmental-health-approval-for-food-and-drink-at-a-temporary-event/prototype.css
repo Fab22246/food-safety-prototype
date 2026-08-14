@@ -1,0 +1,69 @@
+/* =====================================================================
+   MOH Event Food Journey — review-prototype shell styles
+   ---------------------------------------------------------------------
+   These are PROTOTYPE-SCAFFOLDING styles for the review shell only
+   (state inspector + clearly-marked prototype test controls). They are
+   NOT part of, and do not claim to be, the GovTech Barbados design
+   system. The design system is vendored unmodified in ./vendor/
+   (govtech-bb/prototype-template @ f70a449 — tokens.css + govbb.css).
+   Everything visual that matters uses the govbb-* classes; this file only
+   lays out the internal review tooling.
+   ===================================================================== */
+
+/* Clearly-marked internal test controls — never public content */
+.proto-controls {
+  border: 3px dashed #6f777b;
+  padding: 16px;
+  margin: 24px 0;
+  border-radius: 4px;
+}
+.proto-controls > h2 { margin-top: 0; }
+.proto-controls__tag {
+  display: inline-block;
+  background: #6f777b;
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 2px;
+  margin-bottom: 8px;
+}
+.proto-controls .govbb-btn { margin: 4px 8px 4px 0; }
+
+/* State inspector */
+.proto-state { margin: 16px 0; }
+.proto-bucket {
+  border: 2px solid #b1b4b6;
+  border-radius: 4px;
+  padding: 12px 16px;
+  margin: 12px 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.proto-bucket__status {
+  display: inline-block;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 2px 8px;
+  border-radius: 2px;
+  margin-left: 8px;
+}
+/* active/inactive distinguished by text + border + background, not colour alone */
+.proto-bucket.is-active { border-color: #00703c; }
+.proto-bucket.is-active .proto-bucket__status { background: #00703c; color: #fff; }
+.proto-bucket.is-inactive { border-style: dashed; background: #f3f2f1; }
+.proto-bucket.is-inactive .proto-bucket__status { background: #6f777b; color: #fff; }
+.proto-bucket__data {
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 14px;
+  background: #fff;
+  border: 1px solid #e0e4e9;
+  padding: 8px;
+  margin: 8px 0 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.proto-routes-nav { margin: 16px 0; }
+.proto-routes-nav a[aria-current="page"] { font-weight: 700; text-decoration: none; }

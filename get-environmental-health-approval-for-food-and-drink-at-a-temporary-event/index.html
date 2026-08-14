@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en-BB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Get environmental health approval for food and drink at a temporary event | Prototype</title>
+<link rel="stylesheet" href="vendor/tokens.css">
+<link rel="stylesheet" href="vendor/govbb.css">
+<link rel="stylesheet" href="prototype.css">
+</head>
+<body>
+<a class="govbb-skip-link" href="#main">Skip to main content</a>
+
+<header>
+  <div class="govbb-official-banner">
+    <div class="govbb-official-banner__inner govbb-container">
+      <img class="govbb-official-banner__crest" src="vendor/assets/images/govbb-creast.svg" alt="">
+      <span class="govbb-official-banner__text">This is an official website of the Government of Barbados</span>
+    </div>
+  </div>
+
+  <div class="govbb-status-banner govbb-status-banner--alpha">
+    <div class="govbb-container">
+      <p class="govbb-font-body"><strong>Prototype for review only.</strong> This is not a live government service. The wording, questions and logic are not final. Nothing on these pages is submitted, given a reference number, or approved.</p>
+    </div>
+  </div>
+
+  <div class="govbb-header">
+    <div class="govbb-header__inner govbb-container">
+      <a class="govbb-header__logo" href="index.html" aria-label="Get environmental health approval service home">
+        <img src="vendor/assets/images/govbb-logo.svg" alt="alpha.gov.bb">
+      </a>
+      <span class="govbb-font-body">Ministry of Health and Wellness</span>
+    </div>
+  </div>
+</header>
+
+<main id="main" class="govbb-container">
+  <h1 class="govbb-text-h1">Get environmental health approval for food and drink at a temporary event</h1>
+
+  <h2 class="govbb-text-h2">Two separate processes under one goal</h2>
+  <p class="govbb-font-body">The journey may collect shared information once, but these stay separate. Each keeps its own process, record, reference and outcome:</p>
+  <ul class="govbb-list govbb-list--bullet">
+    <li>Request an Environmental Health Officer to attend an event</li>
+    <li>Apply for a licence to operate a temporary restaurant</li>
+  </ul>
+
+  <div class="proto-controls">
+    <span class="proto-controls__tag">Prototype test controls: not public content</span>
+    <h2 class="govbb-text-h3">Open a technical route to review</h2>
+    <p class="govbb-font-body">These three links open the technical routes so the journey and state model can be tested. They are internal review controls, not the final public role question or answer wording.</p>
+    <p>
+      <a class="govbb-btn" href="organiser.html">Organiser only</a>
+      <a class="govbb-btn" href="vendor.html">Vendor only</a>
+      <a class="govbb-btn" href="both.html">Organiser and vendor</a>
+    </p>
+  </div>
+</main>
+
+<footer class="govbb-footer">
+  <div class="govbb-footer__inner govbb-container">
+    <p class="govbb-footer__copy govbb-font-caption">Prototype for review. © 2026 Government of Barbados</p>
+  </div>
+</footer>
+
+<!-- Shared review comments. Uses this repository's existing shared backend
+     (the AWS apiBase, same as the root page). Each screen sets a distinct,
+     stable pageId, which is intended to keep comments separate between
+     screens; comment isolation must still be verified on the deployed
+     GitHub Pages origin before review. Set BEFORE comments.js loads.
+     comments.js itself is unchanged and loaded from the repository root. -->
+<script>
+  window.GTCOMMENTS_OVERRIDE = {
+    supabase: null,
+    apiBase: "https://ltu6w5xthc.execute-api.ca-central-1.amazonaws.com",
+    pageId: "moh-event-food-journey:start"
+  };
+</script>
+<script src="../comments.js" defer></script>
+</body>
+</html>
