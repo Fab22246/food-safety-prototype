@@ -1,6 +1,6 @@
 /* =====================================================================
    Get Environmental Health food safety checks or a temporary restaurant
-   licence for an event — review prototype engine (V6.1)
+   licence — review prototype engine (V6.1 + event/non-event amendment)
    ---------------------------------------------------------------------
    Internal project name: MOH Event Food Journey (not shown to users).
 
@@ -24,7 +24,7 @@
   "use strict";
 
   var STORAGE_KEY = "mefj-v6-state";
-  var SERVICE_TITLE = "Get Environmental Health food safety checks or a temporary restaurant licence for an event";
+  var SERVICE_TITLE = "Get Environmental Health food safety checks or a temporary restaurant licence";
   var AWS = "https://ltu6w5xthc.execute-api.ca-central-1.amazonaws.com";
 
   /* ---------------- state ---------------- */
@@ -43,14 +43,14 @@
     var licence = (task === "licence" || task === "both");
     var newChecks = (task === "checks" || task === "both");
     if (licence) {
-      if (A(s, "elig-duration") === "no") licence = false;
-      if (A(s, "elig-setup") === "permanent") licence = false;
+      if (A(s, "elig-duration") === "no") licence = false; // 30-day rule (licence only)
     }
     if (licence && A(s, "existing-request") === "yes" && task === "both") newChecks = false;
     var ft = A(s, "food-types") || [];
     var prep = A(s, "prep-location") || [];
     return {
       task: task, licence: licence, newChecks: newChecks,
+      isEvent: A(s, "is-event") === "yes",
       matchedEvent: A(s, "ref-match") === "yes",
       drinksOnly: licence && ft.length === 1 && ft[0] === "drinks",
       preparedElsewhere: prep.indexOf("elsewhere") !== -1,
@@ -230,8 +230,9 @@
   /* human-readable value for check your answers */
   function displayValue(field, value) {
     if (field.type === "checkbox") {
-      if (!value || !value.length) return "";
-      return value.map(function (v) { var o = field.options.filter(function (o) { return o.value === v; })[0]; return o ? o.label : v; }).join(", ");
+      var vals = Array.isArray(value) ? value : (value ? [value] : []); // tolerate stale non-array state
+      if (!vals.length) return "";
+      return vals.map(function (v) { var o = field.options.filter(function (o) { return o.value === v; })[0]; return o ? o.label : v; }).join(", ");
     }
     if (field.type === "radio") { var o = field.options.filter(function (o) { return o.value === value; })[0]; return o ? o.label : value; }
     if (field.type === "file") return value ? value : "Not uploaded";
@@ -284,29 +285,30 @@
       return ''
         + '<h1 class="govbb-text-h1">' + esc(SERVICE_TITLE) + "</h1>"
         + '<p class="govbb-font-body">You can use this service to:</p>'
-        + '<ul class="govbb-list govbb-list--bullet"><li>request food safety checks for an event</li>'
+        + '<ul class="govbb-list govbb-list--bullet"><li>request Environmental Health food safety checks</li>'
         + "<li>apply for a temporary restaurant licence</li><li>do both</li></ul>"
         + '<p><a class="govbb-btn" href="#" data-startnew>Start now</a></p>'
         + '<h2 class="govbb-text-h2">If you are applying for a temporary restaurant licence</h2>'
-        + '<p class="govbb-font-body">A temporary restaurant can be a food or drink stall, bar or other temporary setup at an event.</p>'
+        + '<p class="govbb-font-body">A temporary restaurant can be a food or drink stall, bar or other temporary food or drink setup.</p>'
+        + '<p class="govbb-font-body">It can be part of an event, but it does not have to be.</p>'
         + '<p class="govbb-font-body">It must run for <strong>30 days or less</strong>.</p>'
         + '<p class="govbb-font-body">The 30-day limit only applies to the temporary restaurant licence. It does not apply to the food safety checks request.</p>'
         + '<h2 class="govbb-text-h2">What you need before you start</h2>'
         + '<p class="govbb-font-body">Depending on what you are doing, you may need:</p>'
         + '<ul class="govbb-list govbb-list--bullet">'
-        + "<li>an event site plan</li>"
-        + "<li>a list of the food and drink stalls, bars and temporary restaurants at the event</li>"
-        + "<li>a plan showing how the stall, bar or temporary restaurant will be set up</li>"
-        + "<li>the required medical certificate</li>"
+        + "<li>a site plan, if Environmental Health needs to check where food and drink will be prepared, served or sold</li>"
+        + "<li>a list of the food and drink stalls, bars or temporary restaurants, if there is more than one</li>"
+        + "<li>a plan showing how the stall, bar or temporary restaurant will be set up, if you are applying for a temporary restaurant licence</li>"
+        + "<li>the medical certificate needed for the application</li>"
         + "<li>a copy of the food business licence, if the business has one</li>"
-        + "<li>the event reference number, if a request for food safety checks has already been sent</li></ul>"
-        + '<p class="govbb-font-body">You should also know where the food and drink will be prepared and how it will be stored, transported and served.</p>'
-        + '<p class="govbb-font-body"><strong>The form should take about 15 minutes to complete if you have everything you need.</strong></p>'
+        + "<li>the reference number from an earlier food safety checks request, if one has already been sent</li></ul>"
+        + '<p class="govbb-font-body">You should also know where the food and drink will be prepared and how it will be stored, taken to where it will be served or sold, and served.</p>'
+        + '<h2 class="govbb-text-h2">How long it takes</h2>'
+        + '<p class="govbb-font-body">The form should take about <strong>15 minutes</strong> to complete if you have everything you need.</p>'
         + '<h2 class="govbb-text-h2">What happens after you send the form</h2>'
-        + '<p class="govbb-font-body">Environmental Health will review your request or application.</p>'
-        + '<p class="govbb-font-body">If you send both, they will be reviewed separately.</p>'
-        + '<p class="govbb-font-body">The Ministry of Health and Wellness may contact you if it needs more information.</p>'
-        + '<h2 class="govbb-text-h2">Start the service</h2>'
+        + '<ul class="govbb-list govbb-list--bullet"><li>Environmental Health will review your request or application.</li>'
+        + "<li>If you send both, they will be reviewed separately.</li>"
+        + "<li>The Ministry of Health and Wellness may contact you if it needs more information.</li></ul>"
         + '<p><a class="govbb-btn" href="#" data-startnew>Start now</a></p>';
     }
   };
@@ -319,13 +321,25 @@
       key: "task", type: "radio", legend: "What are you using this service to do?", required: true,
       errorRequired: "Select what you are using this service to do.",
       options: [
-        { value: "checks", label: "Request food safety checks for the event" },
+        { value: "checks", label: "Request Environmental Health food safety checks" },
         { value: "licence", label: "Apply for a temporary restaurant licence" },
         { value: "both", label: "Do both" }
       ]
     }],
     onSave: function (s, v) { s.task = v.task; },
     next: function (s) { return computeNext("task", s); }
+  };
+
+  /* ---- is this for an event? (routing only) ---- */
+  SCREENS["is-event"] = {
+    section: null, title: "Is this for an event?",
+    active: function () { return true; },
+    fields: [{
+      key: "is-event", type: "radio", legend: "Is this for an event?",
+      required: true, errorRequired: "Select whether this is for an event.",
+      options: [{ value: "yes", label: "Yes" }, { value: "no", label: "No" }]
+    }],
+    next: function (s) { return computeNext("is-event", s); }
   };
 
   /* ---- eligibility: duration ---- */
@@ -335,7 +349,7 @@
     fields: [{
       key: "elig-duration", type: "radio",
       legend: "Will the temporary restaurant run for 30 days or less?",
-      hint: "A temporary restaurant can be a food or drink stall, bar or other temporary setup at an event.",
+      hint: "A temporary restaurant can be a food or drink stall, bar or other temporary food or drink setup.",
       required: true, errorRequired: "Select whether the temporary restaurant will run for 30 days or less.",
       options: [{ value: "yes", label: "Yes" }, { value: "no", label: "No" }]
     }],
@@ -350,41 +364,20 @@
     "findlicence");
   SCREENS["elig-duration-both"] = continueChecksScreen(
     "You cannot apply for a temporary restaurant licence using this service",
-    ["The temporary restaurant must run for 30 days or less.", "You can still continue with your request for food safety checks."]);
-
-  /* ---- eligibility: setup ---- */
-  SCREENS["elig-setup"] = {
-    section: "licence", title: "Where will the temporary restaurant be based?",
-    active: function (s, d) { return (d.task === "licence" || d.task === "both") && A(s, "elig-duration") !== "no"; },
-    fields: [{
-      key: "elig-setup", type: "radio", legend: "Where will the temporary restaurant be based?",
-      required: true, errorRequired: "Select where the temporary restaurant will be based.",
-      options: [
-        { value: "temporary", label: "At a temporary setup at the event" },
-        { value: "permanent", label: "At a permanent business location, such as a shop or restaurant" }
-      ]
-    }],
-    next: function (s) {
-      if (A(s, "elig-setup") === "permanent") return s.task === "both" ? "elig-setup-both" : "elig-setup-exit";
-      return computeNext("elig-setup", s);
-    }
-  };
-  SCREENS["elig-setup-exit"] = exitScreen(
-    "You cannot apply for a temporary restaurant licence using this service",
-    ["This service is for a temporary food or drink setup at an event.", "You may need a different food business or restaurant licence."],
-    "findlicence");
-  SCREENS["elig-setup-both"] = continueChecksScreen(
-    "You cannot apply for a temporary restaurant licence using this service",
-    ["This service is for a temporary food or drink setup at an event.", "You can still continue with your request for food safety checks."]);
+    ["The temporary restaurant must run for 30 days or less.", "You can still continue with your request for Environmental Health food safety checks."]);
 
   /* ---- existing food safety checks request ---- */
   SCREENS["existing-request"] = {
-    section: null, title: "Has a request for food safety checks already been sent for this event?",
+    section: null, title: "Has a request for Environmental Health food safety checks already been sent?",
     active: function (s, d) { return d.licence && (d.task === "licence" || d.task === "both"); },
+    prepare: function (s) {
+      var where = A(s, "is-event") === "yes" ? "this event" : "this place";
+      this.fields[0].legend = "Has a request for Environmental Health food safety checks already been sent for " + where + "?";
+    },
     fields: [{
       key: "existing-request", type: "radio",
-      legend: "Has a request for food safety checks already been sent for this event?",
-      required: true, errorRequired: "Select whether a request for food safety checks has already been sent for this event.",
+      legend: "Has a request for Environmental Health food safety checks already been sent for this place?",
+      required: true, errorRequired: "Select whether a request for Environmental Health food safety checks has already been sent.",
       options: [{ value: "yes", label: "Yes" }, { value: "no", label: "No" }, { value: "notsure", label: "Not sure" }]
     }],
     next: function (s) {
@@ -395,12 +388,12 @@
     }
   };
   SCREENS["existing-both-dup"] = {
-    section: null, custom: true, title: "A food safety checks request has already been sent",
+    section: null, custom: true, title: "An Environmental Health food safety checks request has already been sent",
     active: function () { return false; },
     render: function () {
       return backLink()
-        + '<h1 class="govbb-text-h1">A food safety checks request has already been sent</h1>'
-        + '<p class="govbb-font-body">We will not send another request for this event.</p>'
+        + '<h1 class="govbb-text-h1">An Environmental Health food safety checks request has already been sent</h1>'
+        + '<p class="govbb-font-body">We will not send another request.</p>'
         + '<p class="govbb-font-body">You can continue with the temporary restaurant licence application.</p>'
         + '<p><button type="button" class="govbb-btn" data-goto="ref-availability">Continue</button></p>';
     }
@@ -411,8 +404,8 @@
     render: function () {
       return backLink()
         + '<h1 class="govbb-text-h1">Check whether a request has already been sent</h1>'
-        + '<p class="govbb-font-body">Sending another request could create a duplicate for the same event.</p>'
-        + '<p class="govbb-font-body">If you can, check with the person or organisation responsible for the event before you continue.</p>'
+        + '<p class="govbb-font-body">Sending another request could create a duplicate.</p>'
+        + '<p class="govbb-font-body">If you can, check with the person or organisation responsible before you continue.</p>'
         + '<p><button type="button" class="govbb-btn" data-goto="existing-request">I have checked</button></p>'
         + '<p><a class="govbb-link" href="#" data-back>Go back</a></p>';
     }
@@ -420,24 +413,24 @@
 
   /* ---- event reference ---- */
   SCREENS["ref-availability"] = {
-    section: null, title: "Do you have the event reference number?",
+    section: null, title: "Do you have the reference number?",
     active: function (s) { return A(s, "existing-request") === "yes"; },
     fields: [{
       key: "ref-availability", type: "radio",
-      legend: "Do you have the event reference number?",
-      hint: "This number is given after a request for food safety checks is sent. We use it to match this application to the event.",
-      required: true, errorRequired: "Select whether you have the event reference number.",
+      legend: "Do you have the reference number?",
+      hint: "This number is given after a request for Environmental Health food safety checks is sent. We use it to match this application to the earlier request.",
+      required: true, errorRequired: "Select whether you have the reference number.",
       options: [{ value: "yes", label: "Yes" }, { value: "no", label: "No" }]
     }],
     next: function (s) { return A(s, "ref-availability") === "yes" ? "ref-enter" : computeNext("ref-availability", s); }
   };
   SCREENS["ref-enter"] = {
-    section: null, title: "What is the event reference number?",
+    section: null, title: "What is the reference number?",
     active: function (s) { return A(s, "ref-availability") === "yes"; },
     fields: [{
-      key: "ref-number", type: "text", label: "Event reference number",
-      hint: "You can find this number in the confirmation for the food safety checks request.",
-      required: true, errorRequired: "Enter the event reference number."
+      key: "ref-number", type: "text", label: "Reference number",
+      hint: "You can find it in the confirmation for the Environmental Health food safety checks request.",
+      required: true, errorRequired: "Enter the reference number."
     }],
     next: function (s) {
       // prototype simulation: references starting EHO- match a demo event
@@ -448,18 +441,25 @@
     section: null, title: "Is this the event?",
     active: function (s) { return A(s, "ref-availability") === "yes" && /^EHO-/i.test((A(s, "ref-number") || "").trim()); },
     custom: true,
+    prepare: function (s) {
+      var isEvent = A(s, "is-event") === "yes";
+      this.title = isEvent ? "Is this the event?" : "Is this the right place?";
+      this.fields[0].errorRequired = isEvent ? "Select whether this is the event." : "Select whether this is the right place.";
+    },
     render: function (s, d, errors) {
       var e = errors && errors["ref-match"];
-      var demo = demoEvent();
+      function row(k, v) { return '<div class="govbb-summary-list__row"><dt class="govbb-summary-list__key">' + esc(k) + '</dt><dd class="govbb-summary-list__value">' + esc(v) + "</dd></div>"; }
+      var isEvent = d.isEvent;
+      var h1 = isEvent ? "Is this the event?" : "Is this the right place?";
+      var rows = isEvent
+        ? row("Event name", "Crop Over Village Food Fair") + row("Location", "Kensington Oval, Fontabelle, Saint Michael") + row("Date or dates", "1 to 3 August 2026")
+        : row("Address", "12 Roebuck Street, Bridgetown, Saint Michael") + row("Date of the earlier request", "14 August 2026");
       var html = backLink() + errorSummary(errors || {}, ["ref-match"]);
       html += '<form id="screen-form" novalidate>';
       html += '<div class="govbb-form-group"><fieldset class="govbb-fieldset"' + (e ? ' aria-describedby="ref-match-error"' : "") + '>';
-      html += '<legend class="govbb-fieldset__legend"><h1 class="govbb-text-h1">Is this the event?</h1></legend>';
+      html += '<legend class="govbb-fieldset__legend"><h1 class="govbb-text-h1">' + esc(h1) + '</h1></legend>';
       if (e) html += '<p class="govbb-error-message" id="ref-match-error">' + esc(e) + "</p>";
-      html += '<dl class="govbb-summary-list">'
-        + '<div class="govbb-summary-list__row"><dt class="govbb-summary-list__key">Event name</dt><dd class="govbb-summary-list__value">' + esc(demo.name) + "</dd></div>"
-        + '<div class="govbb-summary-list__row"><dt class="govbb-summary-list__key">Location</dt><dd class="govbb-summary-list__value">' + esc(demo.location) + "</dd></div>"
-        + '<div class="govbb-summary-list__row"><dt class="govbb-summary-list__key">Date or dates</dt><dd class="govbb-summary-list__value">' + esc(demo.dates) + "</dd></div></dl>";
+      html += '<dl class="govbb-summary-list">' + rows + "</dl>";
       ["yes", "no"].forEach(function (val) {
         var id = "ref-match-" + val;
         html += '<div class="govbb-radio-item"><input class="govbb-radio" type="radio" id="' + id + '" name="ref-match" value="' + val + '"'
@@ -470,19 +470,30 @@
       return html;
     },
     fields: [{ key: "ref-match", type: "radio", required: true, errorRequired: "Select whether this is the event.", options: [{ value: "yes", label: "Yes" }, { value: "no", label: "No" }] }],
-    onSave: function (s, v) { if (v["ref-match"] === "yes") { var demo = demoEvent(); s.answers["event-name"] = demo.name; s.answers["_matched-location"] = demo.location; s.answers["_matched-dates"] = demo.dates; } },
+    onSave: function (s, v) {
+      if (v["ref-match"] === "yes") {
+        if (A(s, "is-event") === "yes") {
+          s.answers["event-name"] = "Crop Over Village Food Fair";
+          s.answers["_matched-location"] = "Kensington Oval, Fontabelle, Saint Michael";
+          s.answers["_matched-dates"] = "1 to 3 August 2026";
+        } else {
+          s.answers["_matched-location"] = "12 Roebuck Street, Bridgetown, Saint Michael";
+          s.answers["_matched-date"] = "14 August 2026";
+        }
+      }
+    },
     next: function (s) { return A(s, "ref-match") === "yes" ? computeNext("ref-match", s) : "ref-enter"; }
   };
   SCREENS["ref-nomatch"] = {
-    section: null, custom: true, title: "We could not find that event",
+    section: null, custom: true, title: "We could not find a match",
     active: function () { return false; },
     render: function () {
       return backLink()
-        + '<h1 class="govbb-text-h1">We could not find that event</h1>'
-        + '<p class="govbb-font-body">Check the event reference number and try again.</p>'
-        + '<p class="govbb-font-body">You can also continue without the number and enter the event details yourself.</p>'
+        + '<h1 class="govbb-text-h1">We could not find a match</h1>'
+        + '<p class="govbb-font-body">Check the reference number and try again.</p>'
+        + '<p class="govbb-font-body">You can also continue without the number and enter the details yourself.</p>'
         + '<p><button type="button" class="govbb-btn" data-goto="ref-enter">Try the number again</button></p>'
-        + '<p><a class="govbb-link" href="#" data-goto-manual>Enter the event details</a></p>';
+        + '<p><a class="govbb-link" href="#" data-goto-manual>Enter the details</a></p>';
     }
   };
 
@@ -531,13 +542,13 @@
   /* ---- event identification (skipped when matched) ---- */
   SCREENS["event-name"] = {
     section: "event", title: "What is the name of the event?",
-    active: function (s, d) { return !d.matchedEvent; },
+    active: function (s, d) { return d.isEvent && !d.matchedEvent; },
     fields: [{ key: "event-name", type: "text", label: "Event name", required: true, errorRequired: "Enter the name of the event." }],
     next: function (s) { return computeNext("event-name", s); }
   };
   SCREENS["event-location"] = {
     section: "event", title: "Where will the event take place?", kind: "form", h1: "Where will the event take place?",
-    active: function (s, d) { return !d.matchedEvent; },
+    active: function (s, d) { return d.isEvent && !d.matchedEvent; },
     fields: [
       { key: "evt-addr1", type: "text", label: "Street address line 1", required: true, errorRequired: "Enter street address line 1" },
       { key: "evt-addr2", type: "text", label: "Street address line 2 (optional)" },
@@ -548,7 +559,7 @@
   };
   SCREENS["event-dates"] = {
     section: "event", title: "When will the event take place?", kind: "form", h1: "When will the event take place?",
-    active: function (s, d) { return !d.matchedEvent; },
+    active: function (s, d) { return d.isEvent && !d.matchedEvent; },
     fields: [
       { key: "evt-start", type: "date", label: "Start date", required: true, errorRequired: "Enter the start date" },
       { key: "evt-end", type: "date", label: "End date", hint: "Use the same date if the event lasts for 1 day.", required: true, errorRequired: "Enter the end date",
@@ -577,7 +588,7 @@
   };
   SCREENS["event-times"] = {
     section: "event", title: "What time will the event start and finish?", kind: "form", h1: "What time will the event start and finish?",
-    active: function (s, d) { return !d.matchedEvent; },
+    active: function (s, d) { return d.isEvent && !d.matchedEvent; },
     fields: [
       { key: "evt-time-start", type: "time", label: "Start time", required: true, errorRequired: "Enter the start time" },
       { key: "evt-time-finish", type: "time", label: "Finish time", required: true, errorRequired: "Enter the finish time" }
@@ -586,7 +597,7 @@
   };
   SCREENS["event-organiser"] = {
     section: "event", title: "Who is organising the event?", kind: "form", h1: "Who is organising the event?",
-    active: function (s, d) { return !d.matchedEvent; },
+    active: function (s, d) { return d.isEvent && !d.matchedEvent; },
     fields: [
       { key: "org-same", type: "checkbox", legend: "If the same person, business or organisation is organising the event",
         options: [{ value: "yes", label: "Use the same details" }] },
@@ -615,12 +626,52 @@
   /* ---- event size (new checks request) ---- */
   SCREENS["event-size"] = {
     section: "checks", title: "Tell us about the size of the event", kind: "form", h1: "Tell us about the size of the event",
-    active: function (s, d) { return d.newChecks; },
+    active: function (s, d) { return d.isEvent && d.newChecks; },
     fields: [
       { key: "size-attendance", type: "number", min: 0, inputmode: "numeric", label: "Expected number of people attending", hint: "Enter your best estimate.", required: true, errorRequired: "Enter the expected number of people attending", errorFormat: "Enter a whole number" },
       { key: "size-stalls", type: "number", min: 0, inputmode: "numeric", label: "Number of food or drink stalls, bars and temporary restaurants", required: true, errorRequired: "Enter the number of food or drink stalls, bars and temporary restaurants", errorFormat: "Enter a whole number" }
     ],
     next: function (s) { return computeNext("event-size", s); }
+  };
+
+  /* ---- non-event location and date ---- */
+  SCREENS["ns-checks-location"] = {
+    section: "nsloc-checks", title: "Where are the food safety checks needed?", kind: "form", h1: "Where are the food safety checks needed?",
+    active: function (s, d) { return !d.isEvent && d.newChecks && !d.licence && !d.matchedEvent; },
+    fields: [
+      { key: "nsc-addr1", type: "text", label: "Street address line 1", required: true, errorRequired: "Enter street address line 1" },
+      { key: "nsc-addr2", type: "text", label: "Street address line 2 (optional)" },
+      { key: "nsc-parish", type: "radio", legend: "Parish", required: true, errorRequired: "Select a parish", options: parishOptions() },
+      { key: "nsc-directions", type: "text", label: "Directions or nearby landmark (optional)" }
+    ],
+    next: function (s) { return computeNext("ns-checks-location", s); }
+  };
+  SCREENS["ns-checks-date"] = {
+    section: "nsloc-checks", title: "When are the food safety checks needed?",
+    active: function (s, d) { return !d.isEvent && d.newChecks && !d.licence; },
+    fields: [{ key: "nsc-date", type: "date", label: "Date", required: true, errorRequired: "Enter the date" }],
+    next: function (s) { return computeNext("ns-checks-date", s); }
+  };
+  SCREENS["ns-licence-location"] = {
+    section: "nsloc-licence", title: "Where will the temporary restaurant be located?", kind: "form", h1: "Where will the temporary restaurant be located?",
+    active: function (s, d) { return !d.isEvent && d.licence && !d.matchedEvent; },
+    fields: [
+      { key: "nsl-addr1", type: "text", label: "Street address line 1", required: true, errorRequired: "Enter street address line 1" },
+      { key: "nsl-addr2", type: "text", label: "Street address line 2 (optional)" },
+      { key: "nsl-parish", type: "radio", legend: "Parish", required: true, errorRequired: "Select a parish", options: parishOptions() },
+      { key: "nsl-directions", type: "text", label: "Directions or nearby landmark (optional)" }
+    ],
+    next: function (s) { return computeNext("ns-licence-location", s); }
+  };
+  SCREENS["ns-licence-dates"] = {
+    section: "nsloc-licence", title: "When will the temporary restaurant run?", kind: "form", h1: "When will the temporary restaurant run?",
+    active: function (s, d) { return !d.isEvent && d.licence; },
+    fields: [
+      { key: "nsl-start", type: "date", label: "Start date", required: true, errorRequired: "Enter the start date" },
+      { key: "nsl-end", type: "date", label: "End date", hint: "Use the same date if it will run for 1 day.", required: true, errorRequired: "Enter the end date",
+        validate: function (v, all) { if (all["nsl-start"] && v && v < all["nsl-start"]) return "The end date must be the same as or after the start date"; return null; } }
+    ],
+    next: function (s) { return computeNext("ns-licence-dates", s); }
   };
 
   /* ---- licence: food and drink ---- */
@@ -657,8 +708,8 @@
       required: true, errorRequired: "Select where the food and drink will be prepared.",
       exclusive: "none",
       options: [
-        { value: "atevent", label: "At the event" },
-        { value: "elsewhere", label: "Somewhere else before the event" },
+        { value: "atevent", label: "Where it will be served or sold" },
+        { value: "elsewhere", label: "Somewhere else" },
         { value: "none", label: "No food or drink will be prepared" }
       ]
     }],
@@ -713,15 +764,15 @@
     next: function (s) { return computeNext("raw-food-detail", s); }
   };
   SCREENS["cooked-before"] = {
-    section: "licence", title: "Will any food be cooked before the event?",
+    section: "licence", title: "Will any food be cooked somewhere else?",
     active: function (s, d) { return d.licence && d.preparedElsewhere && !d.drinksOnly; },
-    fields: [{ key: "cooked-before", type: "radio", legend: "Will any food be cooked before the event?", required: true, errorRequired: "Select whether any food will be cooked before the event.", options: [{ value: "yes", label: "Yes" }, { value: "no", label: "No" }] }],
+    fields: [{ key: "cooked-before", type: "radio", legend: "Will any food be cooked somewhere else?", required: true, errorRequired: "Select whether any food will be cooked somewhere else.", options: [{ value: "yes", label: "Yes" }, { value: "no", label: "No" }] }],
     next: function (s) { return computeNext("cooked-before", s); }
   };
   SCREENS.reheated = {
-    section: "licence", title: "Will any of this food be reheated at the event?",
+    section: "licence", title: "Will any of this food be heated again before it is served?",
     active: function (s, d) { return d.licence && d.preparedElsewhere && !d.drinksOnly && A(s, "cooked-before") === "yes"; },
-    fields: [{ key: "reheated", type: "radio", legend: "Will any of this food be reheated at the event?", required: true, errorRequired: "Select whether any of this food will be reheated at the event.", options: [{ value: "yes", label: "Yes" }, { value: "no", label: "No" }] }],
+    fields: [{ key: "reheated", type: "radio", legend: "Will any of this food be heated again before it is served?", required: true, errorRequired: "Select whether any of this food will be heated again before it is served.", options: [{ value: "yes", label: "Yes" }, { value: "no", label: "No" }] }],
     next: function (s) { return computeNext("reheated", s); }
   };
   SCREENS["hot-holding"] = {
@@ -749,9 +800,9 @@
     next: function (s) { return computeNext("cold-holding-detail", s); }
   };
   SCREENS.transport = {
-    section: "licence", title: "How will the food and drink be taken to the event?",
+    section: "licence", title: "How will the food and drink be taken to where it will be served or sold?",
     active: function (s, d) { return d.licence && d.preparedElsewhere; },
-    fields: [{ key: "transport", type: "textarea", label: "Transport details", hint: "Tell us how it will be packed and transported.", required: true, errorRequired: "Tell us how the food and drink will be taken to the event." }],
+    fields: [{ key: "transport", type: "textarea", label: "How the food and drink will be taken there", hint: "Tell us how it will be packed and taken there.", required: true, errorRequired: "Tell us how the food and drink will be taken to where it will be served or sold." }],
     next: function (s) { return computeNext("transport", s); }
   };
   SCREENS["food-sources"] = {
@@ -781,13 +832,13 @@
   SCREENS.handwashing = {
     section: "licence", title: "How will people preparing or serving food wash their hands?",
     active: function (s, d) { return d.licence; },
-    fields: [{ key: "handwashing", type: "textarea", label: "Handwashing facilities", required: true, errorRequired: "Tell us how people preparing or serving food will wash their hands." }],
+    fields: [{ key: "handwashing", type: "textarea", label: "How they will wash their hands", required: true, errorRequired: "Tell us how people preparing or serving food will wash their hands." }],
     next: function (s) { return computeNext("handwashing", s); }
   };
   SCREENS.waste = {
-    section: "licence", title: "How will rubbish, food waste and wastewater be stored and removed?",
+    section: "licence", title: "How will rubbish, food waste and used water be stored and removed?",
     active: function (s, d) { return d.licence; },
-    fields: [{ key: "waste", type: "textarea", label: "Waste details", required: true, errorRequired: "Tell us how rubbish, food waste and wastewater will be stored and removed." }],
+    fields: [{ key: "waste", type: "textarea", label: "Rubbish, food waste and used water", hint: "Used water includes water from washing and cleaning.", required: true, errorRequired: "Tell us how rubbish, food waste and used water will be stored and removed." }],
     next: function (s) { return computeNext("waste", s); }
   };
 
@@ -795,19 +846,27 @@
   SCREENS["docs-checks-siteplan"] = {
     section: "checks", title: "Upload the event site plan",
     active: function (s, d) { return d.newChecks; },
-    fields: [{ key: "doc-siteplan", type: "file", label: "Event site plan", hint: "The plan should show where food and drink stalls, bars and temporary restaurants will be located." }],
+    prepare: function (s) {
+      var isEvent = A(s, "is-event") === "yes";
+      this.title = this.h1 = isEvent ? "Upload the event site plan" : "Upload the site plan";
+      this.fields[0].label = isEvent ? "Event site plan" : "Site plan";
+      this.fields[0].hint = isEvent
+        ? "The plan should show where the food and drink stalls, bars and temporary restaurants will be located."
+        : "The plan should show where food and drink will be prepared, served or sold.";
+    },
+    fields: [{ key: "doc-siteplan", type: "file", label: "Event site plan", hint: "The plan should show where the food and drink stalls, bars and temporary restaurants will be located." }],
     next: function (s) { return computeNext("docs-checks-siteplan", s); }
   };
   SCREENS["docs-checks-setuplist"] = {
     section: "checks", title: "Upload the list of food and drink stalls, bars and temporary restaurants",
-    active: function (s, d) { return d.newChecks; },
+    active: function (s, d) { return d.newChecks && d.isEvent; },
     fields: [{ key: "doc-setuplist", type: "file", label: "List of food and drink stalls, bars and temporary restaurants", hint: "Upload a document that lists each one at the event." }],
     next: function (s) { return computeNext("docs-checks-setuplist", s); }
   };
   SCREENS["docs-licence-setupplan"] = {
     section: "licence", title: "Upload a plan of the stall, bar or temporary restaurant",
     active: function (s, d) { return d.licence; },
-    fields: [{ key: "doc-setupplan", type: "file", label: "Plan of the stall, bar or temporary restaurant", hint: "The plan should show how it will be set up at the event." }],
+    fields: [{ key: "doc-setupplan", type: "file", label: "Plan of the stall, bar or temporary restaurant", hint: "The plan should show how it will be set up." }],
     next: function (s) { return computeNext("docs-licence-setupplan", s); }
   };
   SCREENS["docs-licence-medical"] = {
@@ -827,11 +886,11 @@
      Spine order + flow
      ===================================================================== */
   var SPINE = [
-    "task", "elig-duration", "elig-setup", "existing-request",
+    "task", "is-event", "elig-duration", "existing-request",
     "ref-availability", "ref-enter", "ref-match",
     "person-completing", "your-details", "represented",
-    "event-name", "event-location", "event-dates", "event-times", "event-organiser",
-    "event-size",
+    "event-name", "event-location", "event-dates", "event-times", "event-organiser", "event-size",
+    "ns-checks-location", "ns-checks-date", "ns-licence-location", "ns-licence-dates",
     "food-types", "food-dishes", "prep-location", "prep-who", "prep-caterer",
     "raw-food", "raw-food-detail", "cooked-before", "reheated",
     "hot-holding", "hot-holding-detail", "cold-holding", "cold-holding-detail",
@@ -875,7 +934,7 @@
       }
     });
     if (derive(s).matchedEvent === false) { /* keep matched cache only if matched */ }
-    if (A(s, "ref-match") !== "yes") { delete s.answers["_matched-location"]; delete s.answers["_matched-dates"]; }
+    if (A(s, "ref-match") !== "yes") { delete s.answers["_matched-location"]; delete s.answers["_matched-dates"]; delete s.answers["_matched-date"]; }
   }
 
   /* =====================================================================
@@ -916,15 +975,28 @@
       // person, business or organisation represented
       var repRows = sectionRowsFor("represented", s);
       if (repRows) html += '<h2 class="govbb-text-h2">Person, business or organisation this form is for</h2><dl class="govbb-summary-list">' + repRows + "</dl>";
-      // event
-      var eventRows = sectionRowsFor("event", s);
-      if (d.matchedEvent) {
-        eventRows = cyaRow("Event reference number", A(s, "ref-number"), "ref-enter")
-          + cyaRow("Event name", A(s, "event-name"), "ref-enter")
-          + cyaRow("Location", A(s, "_matched-location"), "ref-enter")
-          + cyaRow("Date or dates", A(s, "_matched-dates"), "ref-enter");
+      // event OR non-event location/date
+      if (d.isEvent) {
+        var eventRows = sectionRowsFor("event", s);
+        if (d.matchedEvent) {
+          eventRows = cyaRow("Event reference number", A(s, "ref-number"), "ref-enter")
+            + cyaRow("Event name", A(s, "event-name"), "ref-enter")
+            + cyaRow("Location", A(s, "_matched-location"), "ref-enter")
+            + cyaRow("Date or dates", A(s, "_matched-dates"), "ref-enter");
+        }
+        if (eventRows) html += '<h2 class="govbb-text-h2">Event</h2><dl class="govbb-summary-list">' + eventRows + "</dl>";
+      } else {
+        var locChecks = sectionRowsFor("nsloc-checks", s);
+        if (locChecks) html += '<h2 class="govbb-text-h2">Location and date</h2><dl class="govbb-summary-list">' + locChecks + "</dl>";
+        if (d.licence) {
+          var trRows = "";
+          if (d.matchedEvent) trRows += cyaRow("Reference number", A(s, "ref-number"), "ref-enter")
+            + cyaRow("Location", A(s, "_matched-location"), "ref-enter")
+            + cyaRow("Date of the earlier request", A(s, "_matched-date"), "ref-enter");
+          trRows += sectionRowsFor("nsloc-licence", s);
+          if (trRows) html += '<h2 class="govbb-text-h2">Temporary restaurant</h2><dl class="govbb-summary-list">' + trRows + "</dl>";
+        }
       }
-      if (eventRows) html += '<h2 class="govbb-text-h2">Event</h2><dl class="govbb-summary-list">' + eventRows + "</dl>";
       // food safety checks request
       if (d.newChecks) {
         var checksRows = sectionRowsFor("checks", s);
@@ -986,7 +1058,7 @@
       s.answers["cs-name"] = name;
       // simulate outcome (hidden ?sim= for testing partial failure/uncertain)
       var sim = qs().get("sim") || "";
-      var res = { newChecks: d.newChecks, licence: d.licence, sim: sim };
+      var res = { newChecks: d.newChecks, licence: d.licence, isEvent: d.isEvent, eventName: A(s, "event-name") || "", sim: sim };
       if (d.newChecks) res.checksRef = ref("EHO");
       if (d.licence) res.licenceRef = ref("TRL");
       s.result = res; save(s);
@@ -1026,37 +1098,41 @@
       + '<p class="govbb-font-body">The Ministry may contact you if it needs more information.</p>';
   }
   function successChecks(r) {
-    return '<h1 class="govbb-text-h1">Request submitted</h1>'
-      + '<p class="govbb-font-body">We have received the request for food safety checks at the event.</p>'
+    var html = '<h1 class="govbb-text-h1">Request submitted</h1>'
+      + '<p class="govbb-font-body">We have received your request for Environmental Health food safety checks.</p>'
       + '<div class="govbb-inset-text"><p class="govbb-font-body"><strong>Reference number:</strong> ' + esc(r.checksRef) + "</p></div>"
-      + '<p class="govbb-font-body">Keep this number.</p>'
-      + '<p class="govbb-font-body">Give it to anyone applying for a temporary restaurant licence for this event. They can use it to identify the event.</p>'
-      + nextSteps("the request")
+      + '<p class="govbb-font-body">Keep this number.</p>';
+    if (r.isEvent) html += '<p class="govbb-font-body">It can also be used to identify the event if someone applies for a temporary restaurant licence for it.</p>';
+    html += nextSteps("the request")
       + '<p class="govbb-font-body">Sending the request does not mean that an Environmental Health Officer’s attendance has been approved or confirmed.</p>'
       + startAgain();
+    return html;
   }
   function successLicence(r) {
-    return '<h1 class="govbb-text-h1">Application submitted</h1>'
-      + '<p class="govbb-font-body">We have received the application for a temporary restaurant licence.</p>'
-      + '<div class="govbb-inset-text"><p class="govbb-font-body"><strong>Application reference:</strong> ' + esc(r.licenceRef) + "</p></div>"
-      + nextSteps("the application")
+    var html = '<h1 class="govbb-text-h1">Application submitted</h1>'
+      + '<p class="govbb-font-body">We have received your application for a temporary restaurant licence.</p>'
+      + '<div class="govbb-inset-text"><p class="govbb-font-body"><strong>Application reference:</strong> ' + esc(r.licenceRef) + "</p></div>";
+    if (r.isEvent && r.eventName) html += '<p class="govbb-font-body">Event: ' + esc(r.eventName) + "</p>";
+    html += nextSteps("the application")
       + '<p class="govbb-font-body">Submitting the application does not give permission to run the temporary restaurant.</p>'
       + startAgain();
+    return html;
   }
   function successBoth(r) {
-    return '<h1 class="govbb-text-h1">Request and application submitted</h1>'
+    var html = '<h1 class="govbb-text-h1">Request and application submitted</h1>'
       + '<p class="govbb-font-body">We have received:</p>'
-      + '<ul class="govbb-list govbb-list--bullet"><li>your request for food safety checks</li><li>your temporary restaurant licence application</li></ul>'
+      + '<ul class="govbb-list govbb-list--bullet"><li>your request for Environmental Health food safety checks</li><li>your temporary restaurant licence application</li></ul>'
       + '<p class="govbb-font-body">They will be reviewed separately.</p>'
       + '<h2 class="govbb-text-h2">Food safety checks request</h2>'
-      + '<div class="govbb-inset-text"><p class="govbb-font-body"><strong>Reference number:</strong> ' + esc(r.checksRef) + "</p></div>"
-      + '<p class="govbb-font-body">Give this number to anyone else applying for a temporary restaurant licence for this event. They can use it to identify the event.</p>'
-      + '<h2 class="govbb-text-h2">Temporary restaurant licence application</h2>'
+      + '<div class="govbb-inset-text"><p class="govbb-font-body"><strong>Reference number:</strong> ' + esc(r.checksRef) + "</p></div>";
+    if (r.isEvent) html += '<p class="govbb-font-body">Give this number to anyone else applying for a temporary restaurant licence for this event. They can use it to identify the event.</p>';
+    html += '<h2 class="govbb-text-h2">Temporary restaurant licence application</h2>'
       + '<div class="govbb-inset-text"><p class="govbb-font-body"><strong>Application reference:</strong> ' + esc(r.licenceRef) + "</p></div>"
       + '<h2 class="govbb-text-h2">What happens next</h2>'
       + '<p class="govbb-font-body">Environmental Health will review the request and application separately. The Ministry may contact you if it needs more information.</p>'
       + '<p class="govbb-font-body">Sending them does not mean that the food safety checks request has been approved or that permission has been given to run the temporary restaurant.</p>'
       + startAgain();
+    return html;
   }
   function partialChecksOk(r) {
     return '<h1 class="govbb-text-h1">Your request was sent, but your application was not</h1>'
@@ -1144,6 +1220,7 @@
 
   function renderScreen(id, errors, prefill) {
     var s = load(), sc = SCREENS[id], d = derive(s);
+    if (sc.prepare) sc.prepare(s, d);
     var main = document.getElementById("main");
     document.title = (sc.title ? sc.title + " | " : "") + SERVICE_TITLE + " | Prototype";
     if (sc.custom) { main.innerHTML = sc.render(s, d, errors); wire(id); return; }
@@ -1160,10 +1237,16 @@
         html += renderField(f, v, errors, false);
       });
     } else {
-      // single question: the first field carries the page h1 (in its legend)
+      // single question. Radio/checkbox carry the page h1 in their legend;
+      // other field types (text, textarea, date, file) need a separate h1.
       var f0 = sc.fields[0];
       var v0 = (prefill && f0.key in prefill) ? prefill[f0.key] : (f0.type === "file" ? s.files[f0.key] : s.answers[f0.key]);
-      html += renderField(f0, v0, errors, true);
+      if (f0.type === "radio" || f0.type === "checkbox") {
+        html += renderField(f0, v0, errors, true);
+      } else {
+        html += '<h1 class="govbb-text-h1">' + esc(sc.h1 || sc.title) + "</h1>";
+        html += renderField(f0, v0, errors, false);
+      }
       for (var i = 1; i < sc.fields.length; i++) { var fx = sc.fields[i]; html += renderField(fx, s.answers[fx.key], errors, false); }
     }
     html += '<button type="submit" class="govbb-btn">Continue</button></form>';

@@ -1,6 +1,6 @@
-# Get Environmental Health food safety checks or a temporary restaurant licence for an event — prototype record
+# Get Environmental Health food safety checks or a temporary restaurant licence — prototype record
 
-**Public service title (V6.1, frozen for prototype build):** Get Environmental Health food safety checks or a temporary restaurant licence for an event. ("Food safety checks" is used as the public description of the Environmental Health Officer's attendance, marked for MOH terminology confirmation.)
+**Public service title (V6.1, amended):** Get Environmental Health food safety checks or a temporary restaurant licence. The earlier "…for an event" title was removed by amendment — neither service requires an event. ("Food safety checks" is used as the public description of the Environmental Health Officer's attendance, marked for MOH terminology confirmation.)
 **Internal project name:** MOH Event Food Journey (not shown to users; remains the branch name and the `moh-event-food-journey:*` comment pageId prefix).
 **Status:** Review prototype. Not a live service, not approved policy. Nothing is submitted to a backend; no request or application is approved.
 
@@ -16,6 +16,16 @@ On success, up to two linked records and two references are created and reviewed
 ## Task-based routing
 
 First real question: **What are you using this service to do?** with internal values `checks`, `licence`, `both` (not shown to users). The earlier organiser/operator role-routing model was removed.
+
+## Event / non-event amendment
+
+Neither service requires an event: Environmental Health food safety checks may be for an event or not, and a temporary restaurant may be part of an event or not. After the task question, the journey asks **"Is this for an event?"** (routing only — a "No" answer never makes anyone ineligible).
+
+- **Yes** keeps the existing event-linked journey (event name, location, dates, times, organiser, size, event site plan, list of stalls), collected once when both transactions are active, with reference matching ("Is this the event?").
+- **No** hides all event-only questions and instead collects a plain location and date: "Where are the food safety checks needed?" / "When are the food safety checks needed?" for a checks request, and "Where will the temporary restaurant be located?" / "When will the temporary restaurant run?" for a licence. Reference matching uses "Is this the right place?".
+- Changing the answer recalculates the route and removes now-inactive event or non-event answers from the submitted set.
+- The **permanent-location eligibility gate was removed** — a permanent location no longer makes anyone ineligible. The **30-day duration rule remains the only licence eligibility test** and applies to the licence only.
+- Reference wording is no longer "event reference number"; it is "reference number", reused as the event reference only for event-linked requests. No third public identifier is created.
 
 ## Records, references and the event-reference proposal
 
@@ -64,6 +74,8 @@ State is held in `sessionStorage` (`mefj-v6-state`). When an earlier answer chan
 ## Routes verified in-browser
 
 Task routing and required-answer error; both (2 references); checks only; licence only; dedupe (Both + earlier request → licence only, event by reference); 30-day fail on Both → checks continues (interstitial); reference match, no match and manual entry; drinks-only exclusions (raw/hot dropped, cold kept); prepared-elsewhere branches (cooked before, reheated, transport); raw-food detail; caterer details; representative completion; change-answer regression (Both → Licence prunes checks answers); partial failure (request kept, only application retried); uncertain submission. No `journey.js` console errors; the only console errors are the comments-backend CORS rejection on localhost.
+
+Event / non-event amendment testing: "Is this for an event?" required-answer error; unseeded flow reaches the routing question; Yes keeps the event journey and No hides it; changing the answer prunes the now-inactive event or non-event answers in both directions; non-event reference match shows "Is this the right place?" with address and the date of the earlier request; Check your answers renders the correct sections for checks non-event (Your details, Location and date), licence non-event (Temporary restaurant), both non-event (two references, no event copy) and both event (Your details, Event, Food safety checks request, Temporary restaurant licence application). Stress testing surfaced one latent defensive gap: after a field's type changed during the build (`prep-location` became a checkbox), a returning reviewer's stale `sessionStorage` could hold a string where an array is now expected and crash Check your answers; `displayValue` now coerces non-array checkbox values so stale state renders instead of white-screening.
 
 ## Unresolved MOH / legal / privacy / technical confirmation points
 
