@@ -1,160 +1,95 @@
-# Get approval from Environmental Health for food and drink at a temporary event — review prototype record
+# Get Environmental Health food safety checks or a temporary restaurant licence for an event — prototype record
 
-**Public service name (authoritative):** Get approval from Environmental Health for food and drink at a temporary event
-**Decision date:** 14 August 2026 (supplied this session; supersedes the earlier working name "Get environmental health approval for food and drink at a temporary event").
-**Internal project name:** MOH Event Food Journey — internal only. Not shown as public content. It remains the branch name (`feature/moh-event-food-journey`) and the `moh-event-food-journey:*` comment `pageId` prefix.
-**Status:** Review prototype — not a live service, not approved policy. Wording, questions and logic are not final.
+**Public service title (V6.1, frozen for prototype build):** Get Environmental Health food safety checks or a temporary restaurant licence for an event. ("Food safety checks" is used as the public description of the Environmental Health Officer's attendance, marked for MOH terminology confirmation.)
+**Internal project name:** MOH Event Food Journey (not shown to users; remains the branch name and the `moh-event-food-journey:*` comment pageId prefix).
+**Status:** Review prototype. Not a live service, not approved policy. Nothing is submitted to a backend; no request or application is approved.
 
-> "Approval" in the service name describes the overall **user goal** only. It is not a submission
-> result. Sending a request or an application does not mean it has been approved, granted or
-> licensed. No submission state or reference number is created anywhere in this prototype.
+## Why one public journey, two transactions
 
-## Chunks
+People should not need to understand Environmental Health's internal structure before they start, so there is one combined journey routed by task, not by role. Two separate underlying transactions remain:
 
-- **Chunk 1** (checkpoint, committed): standalone prototype shell — chrome, prototype-review status, per-route state model, page-level reviewer comments.
-- **Chunk 2** (this pass): public start page, route question, and routing into the organiser, vendor and both routes. The technical route controls and state inspector have been removed. Shared/service questions, check answers, declaration, submission, references, confirmations and emails are **not** built and belong to later chunks.
+- a **food safety checks request** (an Environmental Health Officer request), and
+- a **temporary restaurant licence application**.
 
-## Screens (each a stable URL and a distinct comment `pageId`)
+On success, up to two linked records and two references are created and reviewed separately. A combined public form does not mean a combined approval record.
 
-| Screen | File | Comment `pageId` |
-|--------|------|------------------|
-| Start page | `index.html` | `moh-event-food-journey:start` |
-| Route question | `route-question.html` | `moh-event-food-journey:route-question` |
-| Organiser route | `organiser.html` | `moh-event-food-journey:organiser` |
-| Vendor route | `vendor.html` | `moh-event-food-journey:vendor` |
-| Both route | `both.html` | `moh-event-food-journey:both` |
+## Task-based routing
 
-## Exact route-question wording (as built)
+First real question: **What are you using this service to do?** with internal values `checks`, `licence`, `both` (not shown to users). The earlier organiser/operator role-routing model was removed.
 
-- **H1:** What are you responsible for at the event?
-- **Hint:** Choose the answer that best describes what you will do.
-- **Radio options (value → label → hint):**
-  - `organising` → "Organising the event" → "Use this route to request an Environmental Health Officer to attend."
-  - `operating` → "Operating a food or drink stall or temporary restaurant at the event" → "Use this route to apply for a temporary restaurant licence."
-  - `both` → "Both" → "You are organising the event and operating a food or drink stall or temporary restaurant."
-- **Button:** Continue
-- **Required-answer error:** Select what you are responsible for at the event
+## Records, references and the event-reference proposal
 
-## Route-to-process mapping
+- Food safety checks request → one record + one reference (prefix `EHO-` in the prototype).
+- Temporary restaurant licence application → one record + one reference (prefix `TRL-`).
+- The officer-request reference **doubles as the event reference** for later licence applications. No third public event identifier is created. The reference is a linking mechanism, not evidence that an event is registered or approved.
 
-| Answer | Route | Active process(es) | Destination |
-|--------|-------|--------------------|-------------|
-| Organising the event | organiser | Process A: request an Environmental Health Officer | `organiser.html` |
-| Operating a food or drink stall or temporary restaurant | vendor | Process B: apply for a temporary restaurant licence | `vendor.html` |
-| Both | both | Process A **and** Process B (separate records/outcomes) | `both.html` |
+## Duplicate-request prevention
 
-## State model (`journey.js`)
+When a temporary restaurant licence is active, the journey asks whether a food safety checks request has already been sent. When **Do both** is chosen and an earlier request already exists, no second officer request is created; the journey continues with the licence application only and says so. A **Not sure** answer routes to a check-first page and never silently creates a second request.
 
-Held in `sessionStorage` (`mefj-state`), prototype-only, nothing personal seeded. Buckets:
-`shared.applicant`, `shared.event` (shared, kept on every route); `ehoRequest` (process A),
-`licenceApplication` (process B).
+## 30-day and temporary-setup partial eligibility
 
-State rules preserved:
+The 30-day rule and the temporary-versus-permanent setup question apply **only** to the licence route. If the licence route fails either check:
 
-- Shared applicant and event information remain available when the route changes.
-- Environmental Health Officer request data is removed when that process becomes inactive
-  (organiser→vendor).
-- Temporary restaurant licence application data is removed when that process becomes inactive
-  (vendor→organiser).
-- Returning to the route question shows the current answer.
-- Selecting a different answer recalculates the active process state before continuing
-  (`setRoute` runs on Continue and again on each route page's load, so reload and browser Back
-  stay consistent).
-- Inactive process data is **deleted, not retained**, so no hidden answer can appear in review
-  or any future outcome/submission model.
+- on a licence-only journey, the user reaches an exit page;
+- on a **Do both** journey, the licence route is dropped and the valid food safety checks request continues.
 
-No reference number or submission state is created or displayed anywhere.
+Failing licence eligibility never terminates a valid food safety checks request.
 
-## Evidence used
+## Representative / proxy completion
 
-Preparation content on the start page uses only the exact supplied wording. No documents, fees,
-deadlines, processing times, medical evidence, site plans, vendor lists or payment requirements
-are listed in public content. Sources reviewed (GovTech Barbados, `govtech-bb/gov-bb`
-`apps/landing` content; sandbox host `landing.sandbox.alpha.gov.bb`):
+The journey separates the person filling in the form from the person, business or organisation they are filling it in for, and keeps their details separate. Who may complete and sign on behalf of another party is an open MOH/legal point (below).
 
-- **Temporary restaurants: what you need to know** — confirms a temporary restaurant "operates
-  for a period not exceeding 30 days" (Health Services (Restaurants) Regulations, 1969); that
-  both the event organiser and each food vendor must apply; and the 14-day, medical-certificate,
-  site-plan and officer-overtime requirements.
-- **Request an environmental health officer** (`landing-index`) — confirms the event organiser
-  makes the officer request; that it applies where food or drink is served to the public; and
-  that if the organiser is also operating a temporary restaurant, the same service also completes
-  the temporary restaurant licence application.
-- **Apply for a licence to operate a temporary restaurant** (`landing-index`) — confirms the
-  licence is for operators, the 30-day validity, and references a separate "food business
-  licence" for those who already run a licensed food business.
+## Change-answer and state rules
 
-These confirmed requirements (14 days, medical certificate, site plan, overtime fees, National
-Registration Number, organiser letter, etc.) belong to the shared/service questions in later
-chunks; they are recorded here, not shown as public preparation content in this chunk.
+State is held in `sessionStorage` (`mefj-v6-state`). When an earlier answer changes, the active route is recalculated and answers for now-inactive screens are removed, so hidden or inactive answers are not shown on Check your answers and are not part of the submitted set. Check your answers shows only active answers, grouped into Person, Event, Food safety checks request and Temporary restaurant licence application. Declarations and send buttons name only the active transaction or transactions.
 
-## Unresolved MDA decisions (owner: Ministry of Health and Wellness service owner)
+## Prototype implementation notes
 
-- **Permanent-premises exit — BLOCKED by missing evidence.** The 30-day threshold that defines a
-  *temporary* restaurant is evidenced, but the supplied sources give **no confirmed destination**
-  for a permanent premises. A "food business licence" is referenced in the licence start-page
-  content, but no live service page, licence category or URL for it is confirmed in the supplied
-  evidence. Per instruction, no duration threshold, licence category or destination link was
-  inferred, and no permanent-premises question or exit was built. Decision needed: the applicable
-  rule and the current destination for a permanent food premises.
-- **General / non-food Environmental Health Officer requests — out of scope pending confirmation.**
-  The EHO evidence is explicitly for events where food or drink is served to the public. No
-  evidence confirms that this combined service must also support non-food or general officer
-  requests, so no such public route was added. Decision needed: whether this service must support
-  general/non-food EHO requests.
+- **Single shell + per-screen URL.** One `index.html` renders each screen from `journey.js` based on `?screen=<id>`; every screen is a full page load, so `comments.js` re-runs and each screen gets a distinct stable comment `pageId` (`moh-event-food-journey:<screen>`). This preserves per-page reviewer feedback without modifying `comments.js`.
+- **GovTech Barbados design system** vendored unmodified in `./vendor/` from `govtech-bb/prototype-template@f70a449` (`tokens.css`, `govbb.css`, Figtree fonts, crest and logo SVGs). Screens use documented `govbb-*` classes.
+- **No developer controls** (route selectors, state inspectors) are shown. A hidden `?sim=` URL parameter (`fail-checks`, `fail-licence`, `fail-all`, `uncertain`) is used only to exercise failure/partial/uncertain paths during review; it is not a visible control.
+- **Prototype simulations (not production rules):**
+  - Event-reference matching: a reference beginning `EHO-` matches a demo event; anything else does not. Real matching of references and of manually entered event details is an MOH/case-management decision.
+  - References are generated client-side for display only; nothing is stored or sent.
+  - Uploads record the file name only; file contents are never stored.
+- **Files:** `index.html` (shell), `journey.js` (flow, content, validation, check-answers, confirmation, recovery), `record.md`, `vendor/` (design system). The superseded role-routing pages (`organiser.html`, `vendor.html`, `both.html`, `route-question.html`) and `prototype.css` were removed.
 
-## Decision ownership
+## Accessibility and testing limitations
 
-- The **Ministry of Health and Wellness service owner** confirms unresolved service facts and
-  operational decisions only — including the permanent-premises destination and any wider
-  Environmental Health Officer scope above.
-- **Fabian retains content sign-off** for the public wording and journey content. The Ministry is
-  not asked to approve GovTech wording, interaction patterns or content standards.
-- This remains prototype content and is not approved for publication.
+- Each screen has one H1, a Back link on form pages, inline errors, an error summary with focus moved to it on failure, and `aria-invalid` on failed fields.
+- **Comments:** distinct stable pageId per screen and the repository's shared AWS backend are configured, but comment creation, retrieval, isolation, reply, resolve and reopen are **not verified locally** — the backend rejects `localhost` via CORS and must be verified on the deployed GitHub Pages origin.
+- **Viewport:** genuine 320px and 375px CSS viewports are **not verified** — the available browser tooling cannot set an exact layout viewport at those widths. Verify with Playwright/Puppeteer `page.setViewport` or the Chrome DevTools device toolbar at deployment.
 
-## Reviewer comments
+## Routes verified in-browser
 
-- Tool: the repository's existing `comments.js` (repo root), loaded unchanged via `../comments.js`.
-  Not modified.
-- Backend: this repository's existing shared backend — the AWS `apiBase`
-  (`https://ltu6w5xthc.execute-api.ca-central-1.amazonaws.com`), exactly as the root page
-  configures it (`supabase: null`). Each screen sets `window.GTCOMMENTS_OVERRIDE` (with its own
-  stable `pageId`) before `comments.js` loads.
-- Each screen sends a different stable `pageId`. This is intended to keep comments separate
-  between screens. **Comment creation, retrieval, isolation, reply, resolve and reopen are not
-  claimed as verified** — the shared backend rejects `localhost` via CORS, so these can only be
-  verified on the deployed origin.
+Task routing and required-answer error; both (2 references); checks only; licence only; dedupe (Both + earlier request → licence only, event by reference); 30-day fail on Both → checks continues (interstitial); reference match, no match and manual entry; drinks-only exclusions (raw/hot dropped, cold kept); prepared-elsewhere branches (cooked before, reheated, transport); raw-food detail; caterer details; representative completion; change-answer regression (Both → Licence prunes checks answers); partial failure (request kept, only application retried); uncertain submission. No `journey.js` console errors; the only console errors are the comments-backend CORS rejection on localhost.
 
-## Accessibility limitation
+## Unresolved MOH / legal / privacy / technical confirmation points
 
-Keyboard navigation is **partially verified**: a visible focus indicator was observed on the
-Continue button, and the design-system CSS defines a visible focus indicator for the radio
-controls. Complete keyboard order and operation could not be verified because the in-app browser
-did not deliver Tab input consistently. The design-system CSS was not changed to produce stronger
-evidence.
+These are confirmation points, not reasons to reopen the frozen service design. Public wording and journey content are Fabian's content sign-off; the Ministry of Health and Wellness service owner confirms service facts and operational decisions. The Ministry is not asked to approve GovTech wording, interaction patterns or content standards.
 
-## Design system
-
-- Vendored unmodified in `./vendor/` from `govtech-bb/prototype-template` @ commit `f70a449`:
-  `tokens.css`, `govbb.css`, the two Figtree `.woff2` fonts, and the crest and logo SVGs.
-- Screens use documented `govbb-*` classes (skip link, official banner, alpha status banner,
-  header, container, typography, buttons, lists, back link, radios, fieldset, error summary,
-  error message, footer). No separate prototype stylesheet is used; the Chunk 1 `prototype.css`
-  (which only styled the removed test tooling) has been deleted.
-
-## Remaining deployment checks (before the prototype is used for review)
-
-On the deployed GitHub Pages origin (`https://.../food-safety-prototype/...`), where the shared
-comments backend accepts the origin:
-
-1. Create a comment on each screen (start, route-question, organiser, vendor, both).
-2. Reload each screen and confirm its comment remains.
-3. Confirm a comment from one screen does not appear on another.
-4. Test reply, resolve and reopen.
-5. Confirm the comments control works at mobile widths and does not cover essential controls.
-
-Responsive check still outstanding: verify genuine CSS viewports of **exactly 320px and 375px**
-(no horizontal scroll, no hidden controls) using tooling that can set an exact layout viewport
-(for example Playwright/Puppeteer `page.setViewport`, or Chrome DevTools device toolbar). The
-in-app browser and windowed Chrome available in this environment cannot produce those exact
-layout viewports.
+1. Whether "food safety checks" accurately describes the officer's attendance.
+2. Who needs or may request officer attendance.
+3. The 30-day rule and confirmation that it does not restrict the officer-request route.
+4. Whether the temporary-versus-permanent setup question is required.
+5. The correct destination for longer-running or permanent food businesses (the "Find the right licence" link).
+6. What production should do when an event is less than 14 days away (warn, block or alternative route).
+7. Whether the EHO request reference can be reused as the event reference.
+8. The recovery route when someone is not sure whether an officer request already exists.
+9. How duplicate officer requests are prevented outside the combined journey.
+10. How manually entered event details are matched to existing events.
+11. Which event documents are mandatory and what each must contain.
+12. Whose medical certificate is required, and its privacy, access and retention rules (do not activate this sensitive upload in a live service until approved).
+13. Whether venue or organiser permission is required and how it is evidenced (not included in the public journey pending confirmation).
+14. Whether each food, preparation, handling and facilities answer is operationally necessary.
+15. Whether handwashing/water/waste questions apply unchanged to drinks-only and sealed-product routes.
+16. The rule for zero people preparing, serving or selling food and drink, if any.
+17. Who may complete and sign on behalf of another person, business or organisation.
+18. Declaration wording and whether full name and date are needed in addition to the submission record.
+19. Whether an inspection is a normal next step before mentioning it in confirmations.
+20. Fees and payments, if any (none are invented here).
+21. Production status/lifecycle values and user-facing status information.
+22. Partial-failure, uncertain-submission and support/status recovery routes.
+23. Alternative access channels (paper, email, phone, in person).
+24. Production email/notification model when both transactions are sent.
