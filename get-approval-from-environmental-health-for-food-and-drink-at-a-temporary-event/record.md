@@ -27,6 +27,16 @@ Neither service requires an event: Environmental Health food safety checks may b
 - The **permanent-location eligibility gate was removed** — a permanent location no longer makes anyone ineligible. The **30-day duration rule remains the only licence eligibility test** and applies to the licence only.
 - Reference wording is no longer "event reference number"; it is "reference number", reused as the event reference only for event-linked requests. No third public identifier is created.
 
+## Food, preparation and handling alignment (amendment)
+
+The licence food questions were realigned so food type is captured separately from preparation and handling risk, using broad categories shared with the wider Environmental Health food journeys and question-based headings throughout.
+
+- **Food types** ("What types of food or drink will be served or sold?") use broad categories only — meat or poultry, fish or seafood, eggs or dairy products, fruit or vegetables, rice/pasta/bread or other starches, baked goods or desserts, packaged food or drink, drinks, something else. Preparation-state categories (for example "cooked meals or hot food", "salads or uncooked food") were removed; preparation and handling are captured by the later questions. "Something else" reveals a free-text follow-up.
+- **Food offered** ("What food or drink will be offered?") asks only for examples of the main food, dishes or drinks — not an exhaustive menu.
+- **Explicit branching, no inference from free text.** Sequence: types → offered → raw or partly cooked (+ detail if Yes) → prepared somewhere else (+ address and what is prepared there, if Yes) → cooked somewhere else (only if off-site preparation includes food, not drinks only) → heated again (only if cooked somewhere else) → kept hot (except drinks only) with a checkbox for how (food warmer/heated display, or another way + free text) → kept cold (including drinks only) with a checkbox for how (fridge, freezer, cooler, or another way + free text). Hot and cold holding are separate questions; none is inferred from food categories or the food description.
+- **Error style:** simple Yes/No questions use "Choose whether…"; checkbox questions use "Select…".
+- **Judgment calls where the amendment was silent:** the "Who will prepare…" and caterer screens were kept as established branches (not listed in the amendment sequence) and placed after the handling block; because the old "where prepared" question — including its "no food prepared" option — was replaced by the Yes/No "prepared somewhere else" question, those screens now show for all licence routes. The off-site preparation address requires address line 1 (the amendment's error) and, for consistency with every other address in the service, a parish; town or district is optional. No separate frozen-food question existed, so none was removed — the "Freezer" cold-holding option covers it.
+
 ## Records, references and the event-reference proposal
 
 - Food safety checks request → one record + one reference (prefix `EHO-` in the prototype).

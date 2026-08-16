@@ -47,14 +47,12 @@
     }
     if (licence && A(s, "existing-request") === "yes" && task === "both") newChecks = false;
     var ft = A(s, "food-types") || [];
-    var prep = A(s, "prep-location") || [];
     return {
       task: task, licence: licence, newChecks: newChecks,
       isEvent: A(s, "is-event") === "yes",
       matchedEvent: A(s, "ref-match") === "yes",
       drinksOnly: licence && ft.length === 1 && ft[0] === "drinks",
-      preparedElsewhere: prep.indexOf("elsewhere") !== -1,
-      preparedAny: prep.length > 0 && prep.indexOf("none") === -1,
+      preparedElsewhere: A(s, "prep-elsewhere") === "yes",
       prepWho: A(s, "prep-who")
     };
   }
@@ -263,8 +261,8 @@
       "food-dishes": "Fish cakes, rice, fruit juice", "food-sources": "Local market and supermarket",
       "water": "Mains water supply", "handwashing": "Handwashing station with soap and paper towels",
       "waste": "Covered bins, collected daily", "transport": "Insulated boxes in a covered van",
-      "raw-food-detail": "Marinated raw chicken", "hot-holding-detail": "Chafing dishes",
-      "cold-holding-detail": "Ice packs and coolers", "ref-number": "EHO-TEST01", "cs-name": "Test Tester"
+      "raw-food-detail": "Marinated raw chicken", "prep-there-food": "Rice and stews",
+      "ref-number": "EHO-TEST01", "cs-name": "Test Tester"
     };
     if (map[n]) return map[n];
     if (/addr1$/.test(n)) return "1 Test Street";
@@ -676,49 +674,63 @@
 
   /* ---- licence: food and drink ---- */
   SCREENS["food-types"] = {
-    section: "licence", title: "What types of food and drink will be served?",
+    section: "licence", title: "What types of food or drink will be served or sold?",
     active: function (s, d) { return d.licence; },
     fields: [{
-      key: "food-types", type: "checkbox", legend: "What types of food and drink will be served?", hint: "Select all that apply.",
-      required: true, errorRequired: "Select the types of food and drink that will be served.",
+      key: "food-types", type: "checkbox", legend: "What types of food or drink will be served or sold?", hint: "Select all that apply.",
+      required: true, errorRequired: "Select the types of food or drink that will be served or sold.",
       options: [
-        { value: "cooked", label: "Cooked meals or hot food" },
         { value: "meat", label: "Meat or poultry" },
         { value: "fish", label: "Fish or seafood" },
-        { value: "salads", label: "Salads, cut fruit or other uncooked food" },
+        { value: "eggsdairy", label: "Eggs or dairy products" },
+        { value: "fruitveg", label: "Fruit or vegetables" },
+        { value: "starches", label: "Rice, pasta, bread or other starches" },
         { value: "baked", label: "Baked goods or desserts" },
-        { value: "prepackaged", label: "Pre-packaged food or snacks" },
+        { value: "packaged", label: "Packaged food or drink" },
         { value: "drinks", label: "Drinks" },
-        { value: "other", label: "Other food" }
+        { value: "other", label: "Something else" }
       ]
     }],
     next: function (s) { return computeNext("food-types", s); }
   };
+  SCREENS["food-types-other"] = {
+    section: "licence", title: "What other type of food or drink will be served or sold?",
+    active: function (s, d) { return d.licence && (A(s, "food-types") || []).indexOf("other") !== -1; },
+    fields: [{ key: "food-types-other", type: "textarea", label: "Food or drink", required: true, errorRequired: "Tell us what other type of food or drink will be served or sold." }],
+    next: function (s) { return computeNext("food-types-other", s); }
+  };
   SCREENS["food-dishes"] = {
-    section: "licence", title: "What food and drink will be served?",
+    section: "licence", title: "What food or drink will be offered?",
     active: function (s, d) { return d.licence; },
-    fields: [{ key: "food-dishes", type: "textarea", label: "Food and drink", hint: "List the main dishes and drinks. For example, fish cakes, chicken and rice, sushi, cakes, fruit juice or bottled water.", required: true, errorRequired: "Enter the main food and drink that will be served." }],
+    fields: [{ key: "food-dishes", type: "textarea", label: "Food or drink", hint: "Give examples of the main food, dishes or drinks that will be served or sold. You do not need to list every item.", required: true, errorRequired: "Tell us what food or drink will be offered." }],
     next: function (s) { return computeNext("food-dishes", s); }
   };
-  SCREENS["prep-location"] = {
-    section: "licence", title: "Where will the food and drink be prepared?",
+  SCREENS["prep-elsewhere"] = {
+    section: "licence", title: "Will any food or drink be prepared somewhere else?",
     active: function (s, d) { return d.licence; },
-    fields: [{
-      key: "prep-location", type: "checkbox", legend: "Where will the food and drink be prepared?", hint: "Select all that apply.",
-      required: true, errorRequired: "Select where the food and drink will be prepared.",
-      exclusive: "none",
-      options: [
-        { value: "atevent", label: "Where it will be served or sold" },
-        { value: "elsewhere", label: "Somewhere else" },
-        { value: "none", label: "No food or drink will be prepared" }
-      ]
-    }],
-    onSave: function (s, v) { var arr = v["prep-location"] || []; if (arr.indexOf("none") !== -1) v["prep-location"] = ["none"]; s.answers["prep-location"] = v["prep-location"]; },
-    next: function (s) { return computeNext("prep-location", s); }
+    fields: [{ key: "prep-elsewhere", type: "radio", legend: "Will any food or drink be prepared somewhere else?", required: true, errorRequired: "Choose whether any food or drink will be prepared somewhere else.", options: [{ value: "yes", label: "Yes" }, { value: "no", label: "No" }] }],
+    next: function (s) { return computeNext("prep-elsewhere", s); }
+  };
+  SCREENS["prep-address"] = {
+    section: "licence", title: "Where will the food or drink be prepared?", kind: "form", h1: "Where will the food or drink be prepared?",
+    active: function (s, d) { return d.licence && d.preparedElsewhere; },
+    fields: [
+      { key: "prep-addr1", type: "text", label: "Address line 1", required: true, errorRequired: "Enter the address where the food or drink will be prepared." },
+      { key: "prep-addr2", type: "text", label: "Address line 2 (optional)" },
+      { key: "prep-town", type: "text", label: "Town or district" },
+      { key: "prep-parish", type: "radio", legend: "Parish", required: true, errorRequired: "Select a parish", options: parishOptions() }
+    ],
+    next: function (s) { return computeNext("prep-address", s); }
+  };
+  SCREENS["prep-there-food"] = {
+    section: "licence", title: "What food or drink will be prepared there?",
+    active: function (s, d) { return d.licence && d.preparedElsewhere; },
+    fields: [{ key: "prep-there-food", type: "textarea", label: "Food or drink", hint: "Tell us what will be prepared at this location. You do not need to list every item.", required: true, errorRequired: "Tell us what food or drink will be prepared there." }],
+    next: function (s) { return computeNext("prep-there-food", s); }
   };
   SCREENS["prep-who"] = {
     section: "licence", title: "Who will prepare the food and drink?",
-    active: function (s, d) { return d.licence && d.preparedAny; },
+    active: function (s, d) { return d.licence; },
     fields: [{
       key: "prep-who", type: "radio", legend: "Who will prepare the food and drink?",
       required: true, errorRequired: "Select who will prepare the food and drink.",
@@ -732,7 +744,7 @@
   };
   SCREENS["prep-caterer"] = {
     section: "licence", title: "Tell us about the caterer or food business", kind: "form", h1: "Tell us about the caterer or food business",
-    active: function (s, d) { return d.licence && d.preparedAny && (d.prepWho === "caterer" || d.prepWho === "both"); },
+    active: function (s, d) { return d.licence && (d.prepWho === "caterer" || d.prepWho === "both"); },
     fields: [
       { key: "cat-name", type: "text", label: "Name", required: true, errorRequired: "Enter the name of the caterer or food business" },
       { key: "cat-addr1", type: "text", label: "Street address line 1", required: true, errorRequired: "Enter street address line 1" },
@@ -746,58 +758,86 @@
 
   /* ---- preparation and handling ---- */
   SCREENS["raw-food"] = {
-    section: "licence", title: "Will any raw or not fully cooked meat, poultry, fish, seafood or eggs be served?",
+    section: "licence", title: "Will any food be served raw or partly cooked?",
     active: function (s, d) { return d.licence && !d.drinksOnly; },
     fields: [{
       key: "raw-food", type: "radio",
-      legend: "Will any raw or not fully cooked meat, poultry, fish, seafood or eggs be served?",
-      hint: "For example, raw fish in sushi or meat that will not be fully cooked.",
-      required: true, errorRequired: "Select whether any raw or not fully cooked meat, poultry, fish, seafood or eggs will be served.",
+      legend: "Will any food be served raw or partly cooked?",
+      hint: "For example, raw fish, undercooked eggs or meat that is not cooked all the way through.",
+      required: true, errorRequired: "Choose whether any food will be served raw or partly cooked.",
       options: [{ value: "yes", label: "Yes" }, { value: "no", label: "No" }]
     }],
     next: function (s) { return computeNext("raw-food", s); }
   };
   SCREENS["raw-food-detail"] = {
-    section: "licence", title: "What will be served raw or not fully cooked?",
+    section: "licence", title: "What food will be served raw or partly cooked?",
     active: function (s, d) { return d.licence && !d.drinksOnly && A(s, "raw-food") === "yes"; },
-    fields: [{ key: "raw-food-detail", type: "textarea", label: "Food", required: true, errorRequired: "Enter what will be served raw or not fully cooked." }],
+    fields: [{ key: "raw-food-detail", type: "textarea", label: "Food", required: true, errorRequired: "Tell us what food will be served raw or partly cooked." }],
     next: function (s) { return computeNext("raw-food-detail", s); }
   };
   SCREENS["cooked-before"] = {
     section: "licence", title: "Will any food be cooked somewhere else?",
     active: function (s, d) { return d.licence && d.preparedElsewhere && !d.drinksOnly; },
-    fields: [{ key: "cooked-before", type: "radio", legend: "Will any food be cooked somewhere else?", required: true, errorRequired: "Select whether any food will be cooked somewhere else.", options: [{ value: "yes", label: "Yes" }, { value: "no", label: "No" }] }],
+    fields: [{ key: "cooked-before", type: "radio", legend: "Will any food be cooked somewhere else?", required: true, errorRequired: "Choose whether any food will be cooked somewhere else.", options: [{ value: "yes", label: "Yes" }, { value: "no", label: "No" }] }],
     next: function (s) { return computeNext("cooked-before", s); }
   };
   SCREENS.reheated = {
-    section: "licence", title: "Will any of this food be heated again before it is served?",
+    section: "licence", title: "Will any of this food be heated again before it is served or sold?",
     active: function (s, d) { return d.licence && d.preparedElsewhere && !d.drinksOnly && A(s, "cooked-before") === "yes"; },
-    fields: [{ key: "reheated", type: "radio", legend: "Will any of this food be heated again before it is served?", required: true, errorRequired: "Select whether any of this food will be heated again before it is served.", options: [{ value: "yes", label: "Yes" }, { value: "no", label: "No" }] }],
+    fields: [{ key: "reheated", type: "radio", legend: "Will any of this food be heated again before it is served or sold?", required: true, errorRequired: "Choose whether any of this food will be heated again before it is served or sold.", options: [{ value: "yes", label: "Yes" }, { value: "no", label: "No" }] }],
     next: function (s) { return computeNext("reheated", s); }
   };
   SCREENS["hot-holding"] = {
-    section: "licence", title: "Will any food be kept hot before it is served?",
+    section: "licence", title: "Will any food need to be kept hot before it is served or sold?",
     active: function (s, d) { return d.licence && !d.drinksOnly; },
-    fields: [{ key: "hot-holding", type: "radio", legend: "Will any food be kept hot before it is served?", required: true, errorRequired: "Select whether any food will be kept hot before it is served.", options: [{ value: "yes", label: "Yes" }, { value: "no", label: "No" }] }],
+    fields: [{ key: "hot-holding", type: "radio", legend: "Will any food need to be kept hot before it is served or sold?", required: true, errorRequired: "Choose whether any food will need to be kept hot before it is served or sold.", options: [{ value: "yes", label: "Yes" }, { value: "no", label: "No" }] }],
     next: function (s) { return computeNext("hot-holding", s); }
   };
   SCREENS["hot-holding-detail"] = {
     section: "licence", title: "How will the food be kept hot?",
     active: function (s, d) { return d.licence && !d.drinksOnly && A(s, "hot-holding") === "yes"; },
-    fields: [{ key: "hot-holding-detail", type: "textarea", label: "How the food will be kept hot", hint: "Tell us how the food will be kept hot before it is served.", required: true, errorRequired: "Tell us how the food will be kept hot." }],
+    fields: [{
+      key: "hot-holding-detail", type: "checkbox", legend: "How will the food be kept hot?", hint: "Select all that apply.",
+      required: true, errorRequired: "Select how the food will be kept hot.",
+      options: [
+        { value: "warmer", label: "Food warmer or heated display" },
+        { value: "other", label: "Another way" }
+      ]
+    }],
     next: function (s) { return computeNext("hot-holding-detail", s); }
   };
+  SCREENS["hot-holding-other"] = {
+    section: "licence", title: "How else will the food be kept hot?",
+    active: function (s, d) { return d.licence && !d.drinksOnly && A(s, "hot-holding") === "yes" && (A(s, "hot-holding-detail") || []).indexOf("other") !== -1; },
+    fields: [{ key: "hot-holding-other", type: "textarea", label: "How the food will be kept hot", required: true, errorRequired: "Tell us how the food will be kept hot." }],
+    next: function (s) { return computeNext("hot-holding-other", s); }
+  };
   SCREENS["cold-holding"] = {
-    section: "licence", title: "Will any food or drink be kept cold before it is served?",
+    section: "licence", title: "Will any food or drink need to be kept cold before it is served or sold?",
     active: function (s, d) { return d.licence; },
-    fields: [{ key: "cold-holding", type: "radio", legend: "Will any food or drink be kept cold before it is served?", required: true, errorRequired: "Select whether any food or drink will be kept cold before it is served.", options: [{ value: "yes", label: "Yes" }, { value: "no", label: "No" }] }],
+    fields: [{ key: "cold-holding", type: "radio", legend: "Will any food or drink need to be kept cold before it is served or sold?", required: true, errorRequired: "Choose whether any food or drink will need to be kept cold before it is served or sold.", options: [{ value: "yes", label: "Yes" }, { value: "no", label: "No" }] }],
     next: function (s) { return computeNext("cold-holding", s); }
   };
   SCREENS["cold-holding-detail"] = {
     section: "licence", title: "How will the food or drink be kept cold?",
     active: function (s, d) { return d.licence && A(s, "cold-holding") === "yes"; },
-    fields: [{ key: "cold-holding-detail", type: "textarea", label: "How the food or drink will be kept cold", hint: "Tell us how the food or drink will be kept cold before it is served.", required: true, errorRequired: "Tell us how the food or drink will be kept cold." }],
+    fields: [{
+      key: "cold-holding-detail", type: "checkbox", legend: "How will the food or drink be kept cold?", hint: "Select all that apply.",
+      required: true, errorRequired: "Select how the food or drink will be kept cold.",
+      options: [
+        { value: "fridge", label: "Fridge" },
+        { value: "freezer", label: "Freezer" },
+        { value: "cooler", label: "Cooler or container that keeps food cold" },
+        { value: "other", label: "Another way" }
+      ]
+    }],
     next: function (s) { return computeNext("cold-holding-detail", s); }
+  };
+  SCREENS["cold-holding-other"] = {
+    section: "licence", title: "How else will the food or drink be kept cold?",
+    active: function (s, d) { return d.licence && A(s, "cold-holding") === "yes" && (A(s, "cold-holding-detail") || []).indexOf("other") !== -1; },
+    fields: [{ key: "cold-holding-other", type: "textarea", label: "How the food or drink will be kept cold", required: true, errorRequired: "Tell us how the food or drink will be kept cold." }],
+    next: function (s) { return computeNext("cold-holding-other", s); }
   };
   SCREENS.transport = {
     section: "licence", title: "How will the food and drink be taken to where it will be served or sold?",
@@ -891,9 +931,13 @@
     "person-completing", "your-details", "represented",
     "event-name", "event-location", "event-dates", "event-times", "event-organiser", "event-size",
     "ns-checks-location", "ns-checks-date", "ns-licence-location", "ns-licence-dates",
-    "food-types", "food-dishes", "prep-location", "prep-who", "prep-caterer",
-    "raw-food", "raw-food-detail", "cooked-before", "reheated",
-    "hot-holding", "hot-holding-detail", "cold-holding", "cold-holding-detail",
+    "food-types", "food-types-other", "food-dishes",
+    "raw-food", "raw-food-detail",
+    "prep-elsewhere", "prep-address", "prep-there-food",
+    "cooked-before", "reheated",
+    "hot-holding", "hot-holding-detail", "hot-holding-other",
+    "cold-holding", "cold-holding-detail", "cold-holding-other",
+    "prep-who", "prep-caterer",
     "transport", "food-sources", "food-business-licence", "people-count",
     "water", "handwashing", "waste",
     "docs-checks-siteplan", "docs-checks-setuplist",
