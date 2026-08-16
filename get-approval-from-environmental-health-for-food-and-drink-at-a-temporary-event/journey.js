@@ -1,9 +1,7 @@
 /* =====================================================================
    Get Environmental Health food safety checks or a temporary restaurant
-   licence — review prototype engine (V6.1 + event/non-event amendment)
+   licence — review prototype engine
    ---------------------------------------------------------------------
-   Internal project name: MOH Event Food Journey (not shown to users).
-
    One combined public journey, task-based routing. Two underlying
    transactions stay separate:
      - a food safety checks request (Environmental Health Officer request)

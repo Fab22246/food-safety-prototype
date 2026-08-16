@@ -1,7 +1,6 @@
 # Get Environmental Health food safety checks or a temporary restaurant licence — prototype record
 
-**Public service title (V6.1, amended):** Get Environmental Health food safety checks or a temporary restaurant licence. The earlier "…for an event" title was removed by amendment — neither service requires an event. ("Food safety checks" is used as the public description of the Environmental Health Officer's attendance, marked for MOH terminology confirmation.)
-**Internal project name:** MOH Event Food Journey (not shown to users; remains the branch name and the `moh-event-food-journey:*` comment pageId prefix).
+**Public service title:** Get Environmental Health food safety checks or a temporary restaurant licence. ("Food safety checks" is used as the public description of the Environmental Health Officer's attendance, marked for terminology confirmation.)
 **Status:** Review prototype. Not a live service, not approved policy. Nothing is submitted to a backend; no request or application is approved.
 
 ## Why one public journey, two transactions
@@ -68,7 +67,7 @@ State is held in `sessionStorage` (`mefj-v6-state`). When an earlier answer chan
 
 ## Prototype implementation notes
 
-- **Single shell + per-screen URL.** One `index.html` renders each screen from `journey.js` based on `?screen=<id>`; every screen is a full page load, so `comments.js` re-runs and each screen gets a distinct stable comment `pageId` (`moh-event-food-journey:<screen>`). This preserves per-page reviewer feedback without modifying `comments.js`.
+- **Single shell + per-screen URL.** One `index.html` renders each screen from `journey.js` based on `?screen=<id>`; every screen is a full page load, so `comments.js` re-runs and each screen gets a distinct stable comment `pageId` (`food-safety-prototype:<screen>`). This preserves per-page reviewer feedback without modifying `comments.js`.
 - **GovTech Barbados design system** vendored unmodified in `./vendor/` from `govtech-bb/prototype-template@f70a449` (`tokens.css`, `govbb.css`, Figtree fonts, crest and logo SVGs). Screens use documented `govbb-*` classes.
 - **No developer controls** (route selectors, state inspectors) are shown. A hidden `?sim=` URL parameter (`fail-checks`, `fail-licence`, `fail-all`, `uncertain`) is used only to exercise failure/partial/uncertain paths during review; it is not a visible control.
 - **Prototype simulations (not production rules):**
@@ -91,7 +90,7 @@ Event / non-event amendment testing: "Is this for an event?" required-answer err
 
 ## Unresolved MOH / legal / privacy / technical confirmation points
 
-These are confirmation points, not reasons to reopen the frozen service design. Public wording and journey content are Fabian's content sign-off; the Ministry of Health and Wellness service owner confirms service facts and operational decisions. The Ministry is not asked to approve GovTech wording, interaction patterns or content standards.
+These are confirmation points, not reasons to reopen the service design. Public wording and journey content are GovTech's content sign-off; the service owner confirms service facts and operational decisions. GovTech wording, interaction patterns and content standards are not part of that service sign-off.
 
 1. Whether "food safety checks" accurately describes the officer's attendance.
 2. Who needs or may request officer attendance.
