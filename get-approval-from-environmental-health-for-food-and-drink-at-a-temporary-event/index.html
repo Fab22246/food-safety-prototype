@@ -7,9 +7,11 @@
 <link rel="stylesheet" href="vendor/tokens.css">
 <link rel="stylesheet" href="vendor/govbb.css">
 <style>
-  /* Prototype-only spacing: keep the primary action clear of the last field */
-  #main form > button { margin-top: 2rem; }
+  /* Prototype-only spacing */
+  #main { padding-top: 2rem; padding-bottom: 3rem; }        /* clear of header and footer */
+  #main form > button { margin-top: 2rem; }                  /* primary action clear of last field */
   #main .proto-dev { margin-top: 2rem; margin-right: 0.75rem; }
+  .govbb-back-link { margin-bottom: 1rem; }
 </style>
 <!-- Per-screen stable comment pageId. Each screen is a full page load at
      index.html?screen=<id>, so comments.js re-runs and picks up this override.

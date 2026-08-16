@@ -171,7 +171,11 @@
   }
 
   /* ---------------- generic screen assembly ---------------- */
-  function backLink() { return '<a class="govbb-back-link" href="#" data-back>Back</a>'; }
+  function backLink() {
+    return '<a class="govbb-back-link" href="#" data-back>'
+      + '<svg class="govbb-back-link__icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M15.4 7.4 14 6l-6 6 6 6 1.4-1.4L10.8 12z"/></svg>'
+      + 'Back</a>';
+  }
 
   function errorSummary(errors, fieldOrder) {
     var keys = fieldOrder.filter(function (k) { return errors[k]; });
@@ -282,6 +286,7 @@
         + '<p class="govbb-font-body">You can use this service to:</p>'
         + '<ul class="govbb-list govbb-list--bullet"><li>request food safety checks for an event</li>'
         + "<li>apply for a temporary restaurant licence</li><li>do both</li></ul>"
+        + '<p><a class="govbb-btn" href="#" data-startnew>Start now</a></p>'
         + '<h2 class="govbb-text-h2">If you are applying for a temporary restaurant licence</h2>'
         + '<p class="govbb-font-body">A temporary restaurant can be a food or drink stall, bar or other temporary setup at an event.</p>'
         + '<p class="govbb-font-body">It must run for <strong>30 days or less</strong>.</p>'
@@ -301,6 +306,7 @@
         + '<p class="govbb-font-body">Environmental Health will review your request or application.</p>'
         + '<p class="govbb-font-body">If you send both, they will be reviewed separately.</p>'
         + '<p class="govbb-font-body">The Ministry of Health and Wellness may contact you if it needs more information.</p>'
+        + '<h2 class="govbb-text-h2">Start the service</h2>'
         + '<p><a class="govbb-btn" href="#" data-startnew>Start now</a></p>';
     }
   };
@@ -509,7 +515,7 @@
     next: function (s) { return computeNext("your-details", s); }
   };
   SCREENS.represented = {
-    section: "person", title: "Who are you filling in this form for?", kind: "form", h1: "Who are you filling in this form for?",
+    section: "represented", title: "Who are you filling in this form for?", kind: "form", h1: "Who are you filling in this form for?",
     active: function (s) { return A(s, "person-completing") === "no"; },
     fields: [
       { key: "rep-name", type: "text", label: "Name of person, business or organisation", required: true, errorRequired: "Enter the name of the person, business or organisation" },
@@ -582,10 +588,27 @@
     section: "event", title: "Who is organising the event?", kind: "form", h1: "Who is organising the event?",
     active: function (s, d) { return !d.matchedEvent; },
     fields: [
-      { key: "org-name", type: "text", label: "Name of person or organisation", required: true, errorRequired: "Enter the name of the person or organisation organising the event" },
-      { key: "org-tel", type: "tel", label: "Telephone number", inputmode: "tel", required: true, errorRequired: "Enter a telephone number" },
+      { key: "org-same", type: "checkbox", legend: "If the same person, business or organisation is organising the event",
+        options: [{ value: "yes", label: "Use the same details" }] },
+      { key: "org-name", type: "text", label: "Name of person or organisation",
+        validate: function (v, all) { return (all["org-same"] || []).indexOf("yes") !== -1 ? null : ((v && v.trim()) ? null : "Enter the name of the person or organisation organising the event"); } },
+      { key: "org-tel", type: "tel", label: "Telephone number", inputmode: "tel",
+        validate: function (v, all) { return (all["org-same"] || []).indexOf("yes") !== -1 ? null : ((v && v.trim()) ? null : "Enter a telephone number"); } },
       { key: "org-email", type: "email", label: "Email address (optional)", inputmode: "email", errorFormat: "Enter an email address in the correct format" }
     ],
+    onSave: function (s, v) {
+      if ((v["org-same"] || []).indexOf("yes") !== -1) {
+        if (A(s, "person-completing") === "no") {
+          s.answers["org-name"] = A(s, "rep-name") || "";
+          s.answers["org-tel"] = A(s, "rep-tel") || "";
+          s.answers["org-email"] = A(s, "rep-email") || "";
+        } else {
+          s.answers["org-name"] = ((A(s, "yd-first") || "") + " " + (A(s, "yd-last") || "")).trim();
+          s.answers["org-tel"] = A(s, "yd-tel") || "";
+          s.answers["org-email"] = A(s, "yd-email") || "";
+        }
+      }
+    },
     next: function (s) { return computeNext("event-organiser", s); }
   };
 
@@ -890,6 +913,9 @@
       var personHeading = A(s, "person-completing") === "no" ? "Person filling in the form" : "Your details";
       var personRows = sectionRowsFor("person", s);
       if (personRows) html += '<h2 class="govbb-text-h2">' + esc(personHeading) + '</h2><dl class="govbb-summary-list">' + personRows + "</dl>";
+      // person, business or organisation represented
+      var repRows = sectionRowsFor("represented", s);
+      if (repRows) html += '<h2 class="govbb-text-h2">Person, business or organisation this form is for</h2><dl class="govbb-summary-list">' + repRows + "</dl>";
       // event
       var eventRows = sectionRowsFor("event", s);
       if (d.matchedEvent) {
@@ -994,17 +1020,18 @@
     }
   };
 
-  function nextSteps() {
+  function nextSteps(subject) {
     return '<h2 class="govbb-text-h2">What happens next</h2>'
-      + '<p class="govbb-font-body">Environmental Health will review your request or application.</p>'
+      + '<p class="govbb-font-body">Environmental Health will review ' + subject + '.</p>'
       + '<p class="govbb-font-body">The Ministry may contact you if it needs more information.</p>';
   }
   function successChecks(r) {
     return '<h1 class="govbb-text-h1">Request submitted</h1>'
       + '<p class="govbb-font-body">We have received the request for food safety checks at the event.</p>'
       + '<div class="govbb-inset-text"><p class="govbb-font-body"><strong>Reference number:</strong> ' + esc(r.checksRef) + "</p></div>"
-      + '<p class="govbb-font-body">Keep this number. Give it to anyone applying for a temporary restaurant licence for this event. They can use it to identify the event.</p>'
-      + nextSteps()
+      + '<p class="govbb-font-body">Keep this number.</p>'
+      + '<p class="govbb-font-body">Give it to anyone applying for a temporary restaurant licence for this event. They can use it to identify the event.</p>'
+      + nextSteps("the request")
       + '<p class="govbb-font-body">Sending the request does not mean that an Environmental Health Officer’s attendance has been approved or confirmed.</p>'
       + startAgain();
   }
@@ -1012,7 +1039,7 @@
     return '<h1 class="govbb-text-h1">Application submitted</h1>'
       + '<p class="govbb-font-body">We have received the application for a temporary restaurant licence.</p>'
       + '<div class="govbb-inset-text"><p class="govbb-font-body"><strong>Application reference:</strong> ' + esc(r.licenceRef) + "</p></div>"
-      + nextSteps()
+      + nextSteps("the application")
       + '<p class="govbb-font-body">Submitting the application does not give permission to run the temporary restaurant.</p>'
       + startAgain();
   }
@@ -1051,17 +1078,20 @@
   }
   function failChecks() {
     return '<h1 class="govbb-text-h1">We could not send your request</h1>'
-      + '<p class="govbb-font-body">Your request has not been sent. Your answers have been kept. Try again.</p>'
+      + '<p class="govbb-font-body">Your request has not been sent.</p>'
+      + '<p class="govbb-font-body">Your answers have been kept. Try again.</p>'
       + '<p><a class="govbb-btn" href="index.html?screen=confirm-send">Try again</a></p>';
   }
   function failLicence() {
     return '<h1 class="govbb-text-h1">We could not submit your application</h1>'
-      + '<p class="govbb-font-body">Your application has not been submitted. Your answers have been kept. Try again.</p>'
+      + '<p class="govbb-font-body">Your application has not been submitted.</p>'
+      + '<p class="govbb-font-body">Your answers have been kept. Try again.</p>'
       + '<p><a class="govbb-btn" href="index.html?screen=confirm-send">Try again</a></p>';
   }
   function failBoth() {
     return '<h1 class="govbb-text-h1">We could not send your request or application</h1>'
-      + '<p class="govbb-font-body">Neither has been sent. Your answers have been kept. Try again.</p>'
+      + '<p class="govbb-font-body">Neither has been sent.</p>'
+      + '<p class="govbb-font-body">Your answers have been kept. Try again.</p>'
       + '<p><a class="govbb-btn" href="index.html?screen=confirm-send">Try again</a></p>';
   }
   function uncertainResult() {
@@ -1156,8 +1186,9 @@
         go(t);
       });
     });
-    var startnew = document.querySelector("[data-startnew]");
-    if (startnew) startnew.addEventListener("click", function (e) { e.preventDefault(); sessionStorage.removeItem(STORAGE_KEY); go("task"); });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-startnew]"), function (sn) {
+      sn.addEventListener("click", function (e) { e.preventDefault(); sessionStorage.removeItem(STORAGE_KEY); go("task"); });
+    });
     var restart = document.querySelector("[data-restart]");
     if (restart) restart.addEventListener("click", function (e) { e.preventDefault(); sessionStorage.removeItem(STORAGE_KEY); location.href = "index.html"; });
     var noop = document.querySelector("[data-noop]"); if (noop) noop.addEventListener("click", function (e) { e.preventDefault(); });
