@@ -80,11 +80,12 @@
     return { e: e, desc: desc };
   }
 
-  function radioField(field, value, errors) {
+  function radioField(field, value, errors, asHeading) {
     var e = errors && errors[field.key];
     var html = '<div class="govbb-form-group">';
     html += '<fieldset class="govbb-fieldset"' + describedBy(field, e) + '>';
-    html += '<legend class="govbb-fieldset__legend"><h1 class="govbb-text-h1">' + esc(field.legend) + "</h1></legend>";
+    var legendText = esc(field.legend || field.label);
+    html += '<legend class="govbb-fieldset__legend">' + (asHeading ? '<h1 class="govbb-text-h1">' + legendText + "</h1>" : legendText) + "</legend>";
     if (field.hint) html += '<div class="govbb-hint" id="' + field.key + '-hint">' + esc(field.hint) + "</div>";
     if (e) html += '<p class="govbb-error-message" id="' + field.key + '-error">' + esc(e) + "</p>";
     field.options.forEach(function (o, i) {
@@ -101,12 +102,13 @@
     return html;
   }
 
-  function checkboxField(field, value, errors) {
+  function checkboxField(field, value, errors, asHeading) {
     value = value || [];
     var e = errors && errors[field.key];
     var html = '<div class="govbb-form-group">';
     html += '<fieldset class="govbb-fieldset"' + describedBy(field, e) + '>';
-    html += '<legend class="govbb-fieldset__legend"><h1 class="govbb-text-h1">' + esc(field.legend) + "</h1></legend>";
+    var legendText = esc(field.legend || field.label);
+    html += '<legend class="govbb-fieldset__legend">' + (asHeading ? '<h1 class="govbb-text-h1">' + legendText + "</h1>" : legendText) + "</legend>";
     if (field.hint) html += '<div class="govbb-hint" id="' + field.key + '-hint">' + esc(field.hint) + "</div>";
     if (e) html += '<p class="govbb-error-message" id="' + field.key + '-error">' + esc(e) + "</p>";
     field.options.forEach(function (o) {
@@ -138,13 +140,13 @@
     var inputType = field.type === "email" ? "email" : field.type === "tel" ? "tel" : field.type === "number" ? "number"
       : field.type === "date" ? "date" : field.type === "time" ? "time" : "text";
     if (field.type === "textarea") {
-      html += '<textarea class="govbb-textarea" id="' + field.key + '" name="' + field.key + '" rows="' + (field.rows || 4) + '"'
-        + describedBy(field, e) + (e ? ' aria-invalid="true"' : "") + ">" + esc(value || "") + "</textarea>";
+      html += '<div class="govbb-input-wrapper"><textarea class="govbb-textarea" id="' + field.key + '" name="' + field.key + '" rows="' + (field.rows || 4) + '"'
+        + describedBy(field, e) + (e ? ' aria-invalid="true"' : "") + ">" + esc(value || "") + "</textarea></div>";
     } else {
-      html += '<input class="govbb-input" id="' + field.key + '" name="' + field.key + '" type="' + inputType + '"'
+      html += '<div class="govbb-input-wrapper"><input class="govbb-input" id="' + field.key + '" name="' + field.key + '" type="' + inputType + '"'
         + (field.inputmode ? ' inputmode="' + field.inputmode + '"' : "")
         + (field.min != null ? ' min="' + field.min + '"' : "")
-        + ' value="' + esc(value || "") + '"' + describedBy(field, e) + (e ? ' aria-invalid="true"' : "") + ">";
+        + ' value="' + esc(value || "") + '"' + describedBy(field, e) + (e ? ' aria-invalid="true"' : "") + "></div>";
     }
     html += "</div>";
     return html;
@@ -154,16 +156,16 @@
     var html = '<div class="govbb-form-group">';
     html += '<label class="govbb-label" for="' + field.key + '">' + esc(field.label) + "</label>";
     if (field.hint) html += '<div class="govbb-hint" id="' + field.key + '-hint">' + esc(field.hint) + "</div>";
-    html += '<input class="govbb-file-upload__input" id="' + field.key + '" name="' + field.key + '" type="file"'
+    html += '<input id="' + field.key + '" name="' + field.key + '" type="file"'
       + (field.hint ? ' aria-describedby="' + field.key + '-hint"' : "") + ">";
     if (value) html += '<p class="govbb-hint">Selected: ' + esc(value) + " (name only; the file is not stored in this prototype)</p>";
     html += "</div>";
     return html;
   }
 
-  function renderField(field, value, errors) {
-    if (field.type === "radio") return radioField(field, value, errors);
-    if (field.type === "checkbox") return checkboxField(field, value, errors);
+  function renderField(field, value, errors, asHeading) {
+    if (field.type === "radio") return radioField(field, value, errors, asHeading);
+    if (field.type === "checkbox") return checkboxField(field, value, errors, asHeading);
     if (field.type === "file") return fileField(field, value, errors);
     return textField(field, value, errors);
   }
@@ -899,7 +901,7 @@
       html += '<h1 class="govbb-text-h1">' + esc(h1) + "</h1><p class=\"govbb-font-body\">" + esc(lead) + "</p>";
       html += textField({ key: "cs-name", type: "text", label: "Full name", required: true, errorRequired: "Enter your full name" }, A(s, "cs-name"), errors);
       html += '<div class="govbb-form-group"><label class="govbb-label" for="cs-date">Date</label>'
-        + '<input class="govbb-input" id="cs-date" name="cs-date" type="text" value="' + esc(today()) + '" readonly></div>';
+        + '<div class="govbb-input-wrapper"><input class="govbb-input" id="cs-date" name="cs-date" type="text" value="' + esc(today()) + '" readonly></div></div>';
       function chk(key, label) {
         var e = errors[key];
         return '<div class="govbb-form-group govbb-checkbox-item">'
@@ -1091,14 +1093,14 @@
       var intro = sc.intro && sc.intro(s); if (intro) html += '<p class="govbb-font-body">' + esc(intro) + "</p>";
       sc.fields.forEach(function (f) {
         var v = (prefill && f.key in prefill) ? prefill[f.key] : (f.type === "file" ? s.files[f.key] : s.answers[f.key]);
-        html += renderField(f, v, errors);
+        html += renderField(f, v, errors, false);
       });
     } else {
-      // single question: field carries its own legend/h1
+      // single question: the first field carries the page h1 (in its legend)
       var f0 = sc.fields[0];
       var v0 = (prefill && f0.key in prefill) ? prefill[f0.key] : (f0.type === "file" ? s.files[f0.key] : s.answers[f0.key]);
-      html += renderField(f0, v0, errors);
-      for (var i = 1; i < sc.fields.length; i++) { var fx = sc.fields[i]; html += renderField(fx, s.answers[fx.key], errors); }
+      html += renderField(f0, v0, errors, true);
+      for (var i = 1; i < sc.fields.length; i++) { var fx = sc.fields[i]; html += renderField(fx, s.answers[fx.key], errors, false); }
     }
     html += '<button type="submit" class="govbb-btn">Continue</button></form>';
     main.innerHTML = html;
