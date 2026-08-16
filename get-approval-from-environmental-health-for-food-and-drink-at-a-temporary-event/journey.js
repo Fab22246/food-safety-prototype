@@ -47,12 +47,14 @@
     }
     if (licence && A(s, "existing-request") === "yes" && task === "both") newChecks = false;
     var ft = A(s, "food-types") || [];
+    var prep = A(s, "prep-location") || [];
     return {
       task: task, licence: licence, newChecks: newChecks,
       isEvent: A(s, "is-event") === "yes",
       matchedEvent: A(s, "ref-match") === "yes",
       drinksOnly: licence && ft.length === 1 && ft[0] === "drinks",
-      preparedElsewhere: A(s, "prep-elsewhere") === "yes",
+      preparedElsewhere: prep.indexOf("elsewhere") !== -1,
+      preparedAny: prep.length > 0 && prep.indexOf("none") === -1,
       prepWho: A(s, "prep-who")
     };
   }
@@ -113,6 +115,7 @@
       var id = field.key + "-" + o.value;
       html += '<div class="govbb-checkbox-item">';
       html += '<input class="govbb-checkbox" type="checkbox" id="' + id + '" name="' + field.key + '" value="' + esc(o.value) + '"'
+        + (o.value === field.exclusive ? ' data-exclusive="1"' : "")
         + (value.indexOf(o.value) !== -1 ? " checked" : "") + (e ? ' aria-invalid="true"' : "") + ">";
       html += '<label class="govbb-checkbox-item__label" for="' + id + '">' + esc(o.label) + "</label>";
       html += "</div>";
@@ -705,19 +708,29 @@
     fields: [{ key: "food-dishes", type: "textarea", label: "Food or drink", hint: "Give examples of the main food, dishes or drinks that will be served or sold. You do not need to list every item.", required: true, errorRequired: "Tell us what food or drink will be offered." }],
     next: function (s) { return computeNext("food-dishes", s); }
   };
-  SCREENS["prep-elsewhere"] = {
-    section: "licence", title: "Will any food or drink be prepared somewhere else?",
+  SCREENS["prep-location"] = {
+    section: "licence", title: "Where will the food or drink be prepared?",
     active: function (s, d) { return d.licence; },
-    fields: [{ key: "prep-elsewhere", type: "radio", legend: "Will any food or drink be prepared somewhere else?", required: true, errorRequired: "Choose whether any food or drink will be prepared somewhere else.", options: [{ value: "yes", label: "Yes" }, { value: "no", label: "No" }] }],
-    next: function (s) { return computeNext("prep-elsewhere", s); }
+    fields: [{
+      key: "prep-location", type: "checkbox", legend: "Where will the food or drink be prepared?", hint: "Select all that apply.",
+      required: true, errorRequired: "Select where the food or drink will be prepared.",
+      exclusive: "none",
+      options: [
+        { value: "atevent", label: "Where it will be served or sold" },
+        { value: "elsewhere", label: "Somewhere else" },
+        { value: "none", label: "No food or drink will be prepared" }
+      ]
+    }],
+    onSave: function (s, v) { var arr = v["prep-location"] || []; if (arr.indexOf("none") !== -1) v["prep-location"] = ["none"]; s.answers["prep-location"] = v["prep-location"]; },
+    next: function (s) { return computeNext("prep-location", s); }
   };
   SCREENS["prep-address"] = {
-    section: "licence", title: "Where will the food or drink be prepared?", kind: "form", h1: "Where will the food or drink be prepared?",
+    section: "licence", title: "Where else will the food or drink be prepared?", kind: "form", h1: "Where else will the food or drink be prepared?",
     active: function (s, d) { return d.licence && d.preparedElsewhere; },
     fields: [
       { key: "prep-addr1", type: "text", label: "Address line 1", required: true, errorRequired: "Enter the address where the food or drink will be prepared." },
       { key: "prep-addr2", type: "text", label: "Address line 2 (optional)" },
-      { key: "prep-town", type: "text", label: "Town or district" },
+      { key: "prep-town", type: "text", label: "Town or district (optional)" },
       { key: "prep-parish", type: "radio", legend: "Parish", required: true, errorRequired: "Select a parish", options: parishOptions() }
     ],
     next: function (s) { return computeNext("prep-address", s); }
@@ -730,7 +743,7 @@
   };
   SCREENS["prep-who"] = {
     section: "licence", title: "Who will prepare the food and drink?",
-    active: function (s, d) { return d.licence; },
+    active: function (s, d) { return d.licence && d.preparedAny; },
     fields: [{
       key: "prep-who", type: "radio", legend: "Who will prepare the food and drink?",
       required: true, errorRequired: "Select who will prepare the food and drink.",
@@ -744,7 +757,7 @@
   };
   SCREENS["prep-caterer"] = {
     section: "licence", title: "Tell us about the caterer or food business", kind: "form", h1: "Tell us about the caterer or food business",
-    active: function (s, d) { return d.licence && (d.prepWho === "caterer" || d.prepWho === "both"); },
+    active: function (s, d) { return d.licence && d.preparedAny && (d.prepWho === "caterer" || d.prepWho === "both"); },
     fields: [
       { key: "cat-name", type: "text", label: "Name", required: true, errorRequired: "Enter the name of the caterer or food business" },
       { key: "cat-addr1", type: "text", label: "Street address line 1", required: true, errorRequired: "Enter street address line 1" },
@@ -933,7 +946,7 @@
     "ns-checks-location", "ns-checks-date", "ns-licence-location", "ns-licence-dates",
     "food-types", "food-types-other", "food-dishes",
     "raw-food", "raw-food-detail",
-    "prep-elsewhere", "prep-address", "prep-there-food",
+    "prep-location", "prep-address", "prep-there-food",
     "cooked-before", "reheated",
     "hot-holding", "hot-holding-detail", "hot-holding-other",
     "cold-holding", "cold-holding-detail", "cold-holding-other",
@@ -1329,6 +1342,21 @@
     // form submit
     var form = document.getElementById("screen-form");
     if (!form) return;
+
+    // exclusive checkbox groups: checking the exclusive option clears the others,
+    // and checking any other option clears the exclusive one.
+    Array.prototype.forEach.call(form.querySelectorAll('input[type="checkbox"][data-exclusive]'), function (ex) {
+      var group = form.querySelectorAll('input[type="checkbox"][name="' + ex.name + '"]');
+      Array.prototype.forEach.call(group, function (cb) {
+        cb.addEventListener("change", function () {
+          if (cb === ex) {
+            if (ex.checked) Array.prototype.forEach.call(group, function (o) { if (o !== ex) o.checked = false; });
+          } else if (cb.checked) {
+            ex.checked = false;
+          }
+        });
+      });
+    });
 
     // Tester autofill — only in dev mode (?dev=1, persisted for the session).
     // Never shown on the MOH review URL.
