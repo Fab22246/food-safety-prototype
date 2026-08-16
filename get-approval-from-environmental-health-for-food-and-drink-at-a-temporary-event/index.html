@@ -6,6 +6,11 @@
 <title>Get Environmental Health food safety checks or a temporary restaurant licence for an event | Prototype</title>
 <link rel="stylesheet" href="vendor/tokens.css">
 <link rel="stylesheet" href="vendor/govbb.css">
+<style>
+  /* Prototype-only spacing: keep the primary action clear of the last field */
+  #main form > button { margin-top: 2rem; }
+  #main .proto-dev { margin-top: 2rem; margin-right: 0.75rem; }
+</style>
 <!-- Per-screen stable comment pageId. Each screen is a full page load at
      index.html?screen=<id>, so comments.js re-runs and picks up this override.
      Set BEFORE comments.js loads. comments.js itself is unchanged. -->
@@ -34,17 +39,17 @@
       <span class="govbb-official-banner__text">This is an official website of the Government of Barbados</span>
     </div>
   </div>
-  <div class="govbb-status-banner govbb-status-banner--alpha">
-    <div class="govbb-container">
-      <p class="govbb-font-body"><strong>Prototype for review only.</strong> This is not a live government service. The wording, questions and logic are not final. Nothing on these pages is submitted, given a real reference number, or approved.</p>
-    </div>
-  </div>
   <div class="govbb-header">
     <div class="govbb-header__inner govbb-container">
       <a href="index.html" aria-label="Environmental Health event service home">
         <img class="govbb-header__logo" src="vendor/assets/images/govbb-logo.svg" alt="alpha.gov.bb">
       </a>
       <span class="govbb-font-body">Ministry of Health and Wellness</span>
+    </div>
+  </div>
+  <div class="govbb-status-banner govbb-status-banner--alpha">
+    <div class="govbb-container">
+      <p class="govbb-font-body"><strong>Prototype for review only.</strong> This is not a live government service. The wording, questions and logic are not final. Nothing on these pages is submitted, given a real reference number, or approved.</p>
     </div>
   </div>
 </header>

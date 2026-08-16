@@ -234,6 +234,40 @@
     return value;
   }
 
+  /* ---------------- tester autofill (dev mode only) ---------------- */
+  function autofillForm(form) {
+    var seen = {};
+    Array.prototype.forEach.call(form.querySelectorAll('input[type="radio"], input[type="checkbox"]'), function (b) {
+      if (!seen[b.name]) { b.checked = true; seen[b.name] = 1; } // first option of each group
+    });
+    Array.prototype.forEach.call(form.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"], input[type="number"], input[type="date"], input[type="time"], textarea'), function (el) {
+      if (el.readOnly || el.disabled || el.value) return;
+      el.value = sampleForEl(el);
+    });
+  }
+  function sampleForEl(el) {
+    var t = el.type, n = el.name || "";
+    if (t === "email") return "tester@example.com";
+    if (t === "tel") return "+1 246 555 0100";
+    if (t === "date") return "2026-12-01";
+    if (t === "time") return /finish/.test(n) ? "22:00" : "10:00";
+    if (t === "number") return /attendance/.test(n) ? "150" : (/stalls/.test(n) ? "8" : "3");
+    var map = {
+      "yd-first": "Test", "yd-last": "Tester", "rep-name": "Test Organisation",
+      "org-name": "Test Organiser", "cat-name": "Test Catering", "event-name": "Test Event",
+      "food-dishes": "Fish cakes, rice, fruit juice", "food-sources": "Local market and supermarket",
+      "water": "Mains water supply", "handwashing": "Handwashing station with soap and paper towels",
+      "waste": "Covered bins, collected daily", "transport": "Insulated boxes in a covered van",
+      "raw-food-detail": "Marinated raw chicken", "hot-holding-detail": "Chafing dishes",
+      "cold-holding-detail": "Ice packs and coolers", "ref-number": "EHO-TEST01", "cs-name": "Test Tester"
+    };
+    if (map[n]) return map[n];
+    if (/addr1$/.test(n)) return "1 Test Street";
+    if (/addr2$/.test(n)) return "";
+    if (t === "textarea") return "Test details";
+    return "Test";
+  }
+
   /* =====================================================================
      SCREENS
      ===================================================================== */
@@ -1137,6 +1171,22 @@
     // form submit
     var form = document.getElementById("screen-form");
     if (!form) return;
+
+    // Tester autofill — only in dev mode (?dev=1, persisted for the session).
+    // Never shown on the MOH review URL.
+    var devMode = qs().get("dev") === "1" || sessionStorage.getItem("mefj-dev") === "1";
+    if (qs().get("dev") === "1") { try { sessionStorage.setItem("mefj-dev", "1"); } catch (e) {} }
+    if (devMode) {
+      var submitBtn0 = form.querySelector('button[type="submit"]');
+      if (submitBtn0) {
+        var fillBtn = document.createElement("button");
+        fillBtn.type = "button";
+        fillBtn.className = "govbb-btn govbb-btn--secondary proto-dev";
+        fillBtn.textContent = "Fill this page with test data (tester)";
+        submitBtn0.parentNode.insertBefore(fillBtn, submitBtn0);
+        fillBtn.addEventListener("click", function () { autofillForm(form); });
+      }
+    }
     form.addEventListener("submit", function (e) {
       e.preventDefault();
       var s2 = load();
